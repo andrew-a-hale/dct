@@ -1,0 +1,1 @@
+{"metrics": [{"agg": "mean", "left": "b", "right": "b"}, {"agg": "count_distinct", "left": "c"}]}
