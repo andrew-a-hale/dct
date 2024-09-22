@@ -1,5 +1,7 @@
 # dct (data check tool)
 
+## examples
+
 ## setup
 - requires duckdb
 
@@ -17,4 +19,9 @@
       - {agg: {left: col, right: col}, ...}
       - {file}.json
       - aggs: mean, median, min, max, count_distinct
+
+## todo
+- use viper
+- add test cases
+- add examples
 

@@ -16,7 +16,6 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	// TODO: add viper
 	rootCmd.AddCommand(version.VersionCmd)
 	rootCmd.AddCommand(peek.PeekCmd)
 	rootCmd.AddCommand(diff.DiffCmd)
