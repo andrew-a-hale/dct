@@ -1,0 +1,131 @@
+package utils
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"io"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/marcboeker/go-duckdb"
+)
+
+type Header struct {
+	Name string
+	Type string
+}
+
+type Result struct {
+	Headers []Header
+	Rows    [][]string
+}
+
+func CheckFileHasRows(file string) (bool, error) {
+	conn, err := sql.Open("duckdb", "")
+	if err != nil {
+		return false, err
+	}
+
+	row := conn.QueryRowContext(
+		context.Background(),
+		fmt.Sprintf("select count(*) from '%s'", file),
+	)
+
+	var cnt int
+	row.Scan(&cnt)
+	return cnt > 0, nil
+}
+
+func Query(query string) (Result, error) {
+	conn, err := sql.Open("duckdb", "")
+	if err != nil {
+		return Result{}, err
+	}
+
+	rows, err := conn.QueryContext(context.Background(), query)
+	if err != nil {
+		return Result{}, err
+	}
+
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		return Result{}, err
+	}
+
+	var headers []Header
+	for _, col := range cols {
+		headers = append(headers, Header{col.Name(), col.DatabaseTypeName()})
+	}
+
+	var out [][]string
+	vals := make([]interface{}, len(cols))
+
+	row := 0
+	for rows.Next() {
+		for i := range cols {
+			vals[i] = new(interface{})
+		}
+
+		err = rows.Scan(vals...)
+		if err != nil {
+			return Result{}, err
+		}
+
+		var tmp []string
+		for _, v := range vals {
+			if s, ok := v.(*interface{}); ok {
+				if *s == nil {
+					tmp = append(tmp, string("NULL"))
+				} else if x, ok := (*s).(string); ok {
+					tmp = append(tmp, x)
+				} else if x, ok := (*s).(int32); ok {
+					tmp = append(tmp, fmt.Sprintf("%d", x))
+				} else if x, ok := (*s).(int64); ok {
+					tmp = append(tmp, fmt.Sprintf("%d", x))
+				} else if x, ok := (*s).(float64); ok {
+					tmp = append(tmp, fmt.Sprintf("%f", x))
+				} else if x, ok := (*s).(bool); ok {
+					tmp = append(tmp, strconv.FormatBool(x))
+				} else if x, ok := (*s).(time.Time); ok {
+					tmp = append(tmp, x.String())
+				} else if x, ok := (*s).(duckdb.Decimal); ok {
+					b := x.Value.String()
+					sb := b[:x.Scale] + "." + b[x.Scale:]
+					tmp = append(tmp, string(sb))
+				} else {
+					err := fmt.Errorf("type `%v` not implemented yet", reflect.TypeOf(*s))
+					return Result{}, err
+				}
+			}
+		}
+
+		out = append(out, tmp)
+		row++
+	}
+
+	return Result{headers, out}, nil
+}
+
+func (result Result) ToCsv(writer io.Writer) error {
+	var headers []string
+	for _, header := range result.Headers {
+		headers = append(headers, header.Name)
+	}
+
+	rs := strings.Join(headers, ",")
+	if _, err := fmt.Fprintln(writer, rs); err != nil {
+		return err
+	}
+
+	for _, row := range result.Rows {
+		rs := strings.Join(row, ",")
+		if _, err := fmt.Fprintln(writer, rs); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

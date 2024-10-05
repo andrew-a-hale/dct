@@ -22,6 +22,11 @@
 
 ## todo
 - use viper
-- add test cases
-- add examples
-
+- add data generator
+  - dct gen -o -n -s
+    - output
+    - n lines
+    - schema
+- add cli chart
+  - dct chart file
+- add dct art

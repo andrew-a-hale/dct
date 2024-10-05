@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	art "dct/cmd/art"
 	"dct/cmd/diff"
 	"dct/cmd/peek"
 	"dct/cmd/version"
@@ -17,6 +18,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(art.ArtCmd)
 	rootCmd.AddCommand(peek.PeekCmd)
 	rootCmd.AddCommand(diff.DiffCmd)
 }

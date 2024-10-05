@@ -49,6 +49,9 @@ var PeekCmd = &cobra.Command{
 		linesParsed := defaultLines
 		if lines != "" {
 			x, err := strconv.ParseInt(lines, 10, 0)
+			if x < 1 {
+				log.Printf("Error: expected -n to be at least 1 defaulting to %v\n", defaultLines)
+			}
 			if err != nil {
 				log.Printf("Warning: failed to parse -n arg defaulting to %v\n", defaultLines)
 			}
@@ -76,6 +79,15 @@ func parseFileArg(args []string) string {
 }
 
 func peek(file string, lines int, writer io.Writer) {
-	sql := fmt.Sprintf("select * from '%s' limit %d", file, lines)
-	utils.Run(sql, writer)
+	query := fmt.Sprintf("select * from '%s' limit %d", file, lines)
+	result, err := utils.Query(query)
+	if err != nil {
+		log.Fatalf("failed to cmp files: %v", err)
+	}
+
+	if output == "" {
+		utils.Render(writer, result, lines)
+	} else {
+		result.ToCsv(writer)
+	}
 }

@@ -35,6 +35,7 @@ type Metric struct {
 	Left  string `json:"left"`
 	Right string `json:"right,omitempty"`
 }
+
 type metricSpec struct {
 	Metrics []Metric `json:"metrics"`
 }
@@ -78,8 +79,6 @@ keys must be supplied in the following format
 }
 
 func parseArgs(args []string) (keys keySpec, left, right string) {
-	keys = parseKeys(args[0])
-
 	return parseKeys(args[0]), args[1], args[2]
 }
 
@@ -143,36 +142,43 @@ func generateMetricSql(spec metricSpec) (left, right, main, check string) {
 
 	for i, metric := range spec.Metrics {
 		if metric.Agg == utils.COUNT_DISTINCT {
-			left += fmt.Sprintf("count(distinct %s) as l_%s", metric.Left, metric.Left)
+			left += fmt.Sprintf("count(distinct %s) as l_%s_count_distinct", metric.Left, metric.Left)
 
 			if metric.Right == "" {
 				metric.Right = metric.Left
 			}
-			right += fmt.Sprintf("count(distinct %s) as r_%s", metric.Right, metric.Left)
+			right += fmt.Sprintf("count(distinct %s) as r_%s_count_distinct", metric.Right, metric.Left)
 		} else {
-			left += fmt.Sprintf("%s(%s) as l_%s", metric.Agg, metric.Left, metric.Left)
+			left += fmt.Sprintf("%s(%s) as l_%s_%s", metric.Agg, metric.Left, metric.Left, metric.Agg)
 
 			if metric.Right == "" {
 				metric.Right = metric.Left
 			}
-			right += fmt.Sprintf("%s(%s) as r_%s", metric.Agg, metric.Right, metric.Left)
+			right += fmt.Sprintf("%s(%s) as r_%s_%s", metric.Agg, metric.Right, metric.Left, metric.Agg)
 		}
+
 		main += fmt.Sprintf(
-			"l_%s, r_%s, l_%s = r_%s as %s_eq_flag",
+			"l_%s_%s, r_%s_%s, coalesce(l_%s_%s = r_%s_%s, false) as %s_%s_eq_flag",
 			metric.Left,
+			metric.Agg,
 			metric.Left,
+			metric.Agg,
 			metric.Left,
+			metric.Agg,
 			metric.Left,
+			metric.Agg,
 			metric.Left,
+			metric.Agg,
 		)
 
 		if !all {
-			check += fmt.Sprintf(" and l_%s != r_%s", metric.Left, metric.Left)
+			check += fmt.Sprintf(" or l_%s_%s != r_%s_%s", metric.Left, metric.Agg, metric.Left, metric.Agg)
 		}
 
 		if i < len(spec.Metrics)-1 {
 			left += ", "
 			right += ", "
+			main += ", "
 		}
 	}
 
@@ -182,24 +188,56 @@ func generateMetricSql(spec metricSpec) (left, right, main, check string) {
 func generateSql(keys keySpec, left, right string, metrics metricSpec) string {
 	leftKeys, rightKeys := generateKeySql(keys)
 	leftMetrics, rightMetrics, mainMetrics, checkMetrics := generateMetricSql(metrics)
-	leftSql := fmt.Sprintf("select %s, count(*) as a_cnt, %s from '%s' group by all", leftKeys, leftMetrics, left)
-	rightSql := fmt.Sprintf("select %s, count(*) as b_cnt, %s from '%s' group by all", rightKeys, rightMetrics, right)
+	leftSql := fmt.Sprintf("select %s, count(*) as l_cnt, %s from '%s' group by all", leftKeys, leftMetrics, left)
+	rightSql := fmt.Sprintf("select %s, count(*) as r_cnt, %s from '%s' group by all", rightKeys, rightMetrics, right)
 
-	sql := fmt.Sprintf(`with file1 as (
+	sql := fmt.Sprintf(
+		`with file1 as (
   %s
 ), file2 as (
   %s
 )
-select %s, a_cnt, b_cnt, a_cnt = b_cnt as cnt_eq_flag, %s
+select %s, l_cnt, r_cnt, coalesce(l_cnt = r_cnt, false) as cnt_eq_flag, %s
 from file1
 full join file2 using (%s)
-where 1=1 %s
-order by cnt_eq_flag`, leftSql, rightSql, leftKeys, mainMetrics, leftKeys, checkMetrics)
+where l_cnt <> r_cnt %s
+order by cnt_eq_flag`,
+		leftSql,
+		rightSql,
+		leftKeys,
+		mainMetrics,
+		leftKeys,
+		checkMetrics,
+	)
 
 	return sql
 }
 
 func diff(keys keySpec, left string, right string, metrics metricSpec, writer io.Writer) {
-	sql := generateSql(keys, left, right, metrics)
-	utils.Run(sql, writer)
+	leftHasRows, err := utils.CheckFileHasRows(left)
+	if err != nil {
+		log.Fatalf("failed to check file: %v", err)
+	}
+
+	rightHasRows, err := utils.CheckFileHasRows(right)
+	if err != nil {
+		log.Fatalf("failed to check file: %v", err)
+	}
+
+	if !leftHasRows || !rightHasRows {
+		log.Fatal("attempted to diff when least one of the files have no data")
+	}
+
+	query := generateSql(keys, left, right, metrics)
+	result, err := utils.Query(query)
+	if err != nil {
+		log.Fatalf("failed to cmp files: %v", err)
+	}
+
+	if output == "" {
+		maxRows := 5
+		utils.Render(writer, result, maxRows)
+	} else {
+		result.ToCsv(writer)
+	}
 }
