@@ -4,44 +4,24 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/rand"
 	"golang.org/x/term"
 )
 
-const DCT string = `       __       __ 
-  ____/ /_____ / /_
- / __  // ___// __/
-/ /_/ // /__ / /_  
-\__,_/ \___/ \__/  `
-
-const DUCKDB string = `       __              __        __ __  
-  ____/ /__  __ _____ / /__ ____/ // /_ 
- / __  // / / // ___// //_// __  // __ \
-/ /_/ // /_/ // /__ / ,<  / /_/ // /_/ /
-\__,_/ \__,_/ \___//_/|_| \__,_//_.___/ `
-
-type Graphic struct {
-	art   string
-	pos   [2]int
-	size  [2]int
-	dir   [2]int
-	speed int
-}
-
 type Scene struct {
-	Graphics []Graphic
+	Graphics []*Graphic
 	Height   int
 	Width    int
 }
 
-const FRAMERATE int = 60
+const FRAMERATE int = 20
 
-var (
-	height int
-	width  int
-)
+func fpsToDuration() time.Duration {
+	return time.Duration(1000/FRAMERATE) * time.Millisecond
+}
 
 var ArtCmd = &cobra.Command{
 	Use:   "art",
@@ -50,30 +30,22 @@ var ArtCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		scene := newScene()
-		scene.Draw()
+
+		var frame int
+		var i int
+		for {
+			if frame%200 == 0 {
+				scene.Graphics[i].Render = false
+				rand.Seed(uint64(time.Now().UnixNano()))
+				i = rand.Intn(len(scene.Graphics))
+				scene.Graphics[i].Render = true
+			}
+			scene.Draw()
+			scene.UpdateSingle(scene.Graphics[i])
+			time.Sleep(fpsToDuration())
+			frame++
+		}
 	},
-}
-
-func (g *Graphic) boundCheck(width, height int) bool {
-	_, _ = width, height
-	return false
-}
-
-func (g *Graphic) collide(o *Graphic) bool {
-	_ = o
-	return false
-}
-
-func makeDct(width, height int) Graphic {
-	_, _ = width, height
-	lines := strings.Split(DCT, "\n")
-	return Graphic{DCT, [2]int{100, 100}, [2]int{len(lines[0]), len(lines)}, [2]int{1, 1}, 10}
-}
-
-func makeDuckDb(width, height int) Graphic {
-	_, _ = width, height
-	lines := strings.Split(DUCKDB, "\n")
-	return Graphic{DUCKDB, [2]int{200, 200}, [2]int{len(lines[0]), len(lines)}, [2]int{1, -1}, 10}
 }
 
 func newScene() Scene {
@@ -81,22 +53,67 @@ func newScene() Scene {
 	if err != nil {
 		log.Fatalln("failed to get terminal size")
 	}
-	dct := makeDct(width, height)
-	duckdb := makeDuckDb(width, height)
 
-	var graphics []Graphic
-	graphics = append(graphics, dct, duckdb)
+	var display [][][]byte
+	for i := 0; i < height; i++ {
+		var row [][]byte
+		for j := 0; j < width; j++ {
+			row = append(row, []byte(" "))
+		}
+		display = append(display, row)
+	}
+
+	dct := makeGraphic("dct", DCT, width, height, 10, 60, 1)
+	duckdb := makeGraphic("duckdb", DUCKDB, width, height, 1, 20, 1)
+	charm := makeGraphic("charm", CHARM, width, height, 20, 20, 1)
+
+	var graphics []*Graphic
+	graphics = append(graphics, dct, duckdb, charm)
 	return Scene{graphics, height, width}
 }
 
-func (s *Scene) Update() error {
+func (s *Scene) UpdateSingle(g *Graphic) error {
+	g.boundCheck(s)
+	g.Pos[0] = g.Pos[0] + g.Speed*g.Dir[0]
+	g.Pos[1] = g.Pos[1] + g.Speed*g.Dir[1]
+
+	return nil
+}
+
+func (s *Scene) UpdateMultiple() error {
+	for i := 0; i < len(s.Graphics); i++ {
+		g := s.Graphics[i]
+		for j := i + 1; j < len(s.Graphics); j++ {
+			g.checkCollision(s.Graphics[j])
+		}
+		g.boundCheck(s)
+		g.Pos[0] = g.Pos[0] + g.Speed*g.Dir[0]
+		g.Pos[1] = g.Pos[1] + g.Speed*g.Dir[1]
+	}
+
 	return nil
 }
 
 func (s *Scene) Draw() error {
-	for _, g := range s.Graphics {
-		fmt.Printf("%v\n", g)
+	var char []byte
+	var found bool
+	var out string
+
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
+			for _, g := range s.Graphics {
+				if g.Render {
+					char, found = g.getPixel(i, j)
+					if found {
+						break
+					}
+				}
+			}
+			out = out + fmt.Sprintf("%s", char)
+		}
 	}
+
+	fmt.Print(out)
 
 	return nil
 }
