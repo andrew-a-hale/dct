@@ -28,5 +28,4 @@
     - n lines
     - schema
 - add cli chart
-  - dct chart file
-- add dct art
+  - dct chart file x y
