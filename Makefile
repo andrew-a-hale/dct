@@ -6,3 +6,8 @@ diff:
 
 peek:
 	go run main.go peek ./test/resources/left.csv ; 
+
+chart:
+	go run main.go chart ./test/resources/left.csv 1 ;
+	go run main.go chart ./test/resources/right.csv 1 ;
+	go run main.go chart ./test/resources/chart.csv 1 ;
