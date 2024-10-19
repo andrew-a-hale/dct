@@ -10,7 +10,7 @@ import (
 
 var style = lipgloss.NewStyle().Align(lipgloss.Center)
 
-func Render(writer io.Writer, result Result, maxRows int) error {
+func (result *Result) Render(writer io.Writer, maxRows int) error {
 	var headers []string
 	var types []string
 	for _, header := range result.Headers {

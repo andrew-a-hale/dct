@@ -86,7 +86,7 @@ func peek(file string, lines int, writer io.Writer) {
 	}
 
 	if output == "" {
-		utils.Render(writer, result, lines)
+		result.Render(writer, lines)
 	} else {
 		result.ToCsv(writer)
 	}

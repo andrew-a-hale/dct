@@ -16,7 +16,7 @@ type Scene struct {
 	Width   int
 }
 
-const FRAMERATE int = 30
+const FRAMERATE int = 15
 
 func getGraphics() map[int]*[]byte {
 	graphics := make(map[int]*[]byte, 3)

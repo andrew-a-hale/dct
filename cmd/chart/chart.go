@@ -7,8 +7,10 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -17,13 +19,24 @@ import (
 var (
 	TEXTURE                []byte = []byte("╍")
 	DIV_CHAR               []byte = []byte("┤")
-	BOTTOM_LEFT_CHAR       []byte = []byte("└")
-	BOTTOM_RIGHT_CHAR      []byte = []byte("┘")
-	TOP_LEFT_CHAR          []byte = []byte("┌")
-	TOP_RIGHT_CHAR         []byte = []byte("┐")
 	MIDDLE_HORIZONTAL_CHAR []byte = []byte("─")
 	MIDDLE_VERTICAL_CHAR   []byte = []byte("│")
+	DECIMAL_PLACES         int    = 2
 )
+
+type Chart struct {
+	Title        string
+	XLabelWs     string
+	TopBorder    string
+	BottomBorder string
+	Rows         []string
+}
+
+var CHART_TEMPLATE string = `
+{{.XLabelWs}} ┌─{{.Title}}{{.TopBorder}}┐
+{{range .Rows}} {{- println .}}{{end -}}
+{{.XLabelWs}} └{{.BottomBorder}}┘
+`
 
 var ChartCmd = &cobra.Command{
 	Use:   "chart [file] [col-index (1-based)]",
@@ -32,79 +45,79 @@ var ChartCmd = &cobra.Command{
 	Args:  cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		xs, ys := process(args[0], args[1])
-		title := fmt.Sprintf("histogram of '%s'", filepath.Base(args[0]))
-		fmt.Println()
-		draw(title, xs, ys)
-		fmt.Println()
+		filename := filepath.Base(args[0])
+		draw(filename, xs, ys)
 	},
 }
 
-func draw(title string, xs []string, ys []float64) {
+func draw(filename string, xs []string, ys []float64) {
 	termWidth, _, err := term.GetSize(int(os.Stdin.Fd()))
 	if err != nil {
 		log.Fatal("failed to get terminal size")
 	}
 
-	width := int(math.Ceil(float64(termWidth) / 2.0))
+	width := int(math.Ceil(float64(termWidth) / 4.0))
+	xMaxLength := maxStringWidth(xs)
+	yMaxLength := maxFloatWidth(ys, DECIMAL_PLACES)
+	barWidth := (width - xMaxLength - 3 - yMaxLength - 3)
+	titleWidth := (width - xMaxLength - 3 - 1)
+	pixelValue := scale(ys, barWidth)
+	title := makeTitle(filename, titleWidth)
 
-	xlabels := make([]string, len(xs))
-	xMaxLength := utils.MaxStringWidth(xs) + 1
-	for i, x := range xs {
-		leading := strings.Repeat(" ", xMaxLength-strings.Count(x, "")+1)
-		xlabels[i] = fmt.Sprintf("%s%s %s ", leading, x, DIV_CHAR)
+	var xlabels []string
+	for _, x := range xs {
+		xLength := strings.Count(x, "") - 1
+		leading := strings.Repeat(" ", xMaxLength-xLength)
+		xlabels = append(xlabels, fmt.Sprintf("%s%s %s ", leading, x, DIV_CHAR))
 	}
 
-	ticks := 5
-	yticks, step := utils.TickScale(ys, ticks)
-	ypadding := (width - xMaxLength - 1) / 4
-	var ylabels string
-	for i, y := range yticks {
-		if i > 0 {
-			ylabels += strings.Repeat(" ", ypadding-strings.Count(y, "")+1)
-		}
-		ylabels += y
-	}
-
-	fmt.Printf(
-		"%s %s%s %s %s%s\n",
-		strings.Repeat(" ", xMaxLength),
-		TOP_LEFT_CHAR,
-		strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), 2),
-		title,
-		strings.Repeat(
-			string(MIDDLE_HORIZONTAL_CHAR),
-			width-xMaxLength-1-2-strings.Count(title, "")-1,
-		),
-		TOP_RIGHT_CHAR,
-	)
+	var rows []string
 	for i, y := range ys {
+		// label
 		line := fmt.Sprint(xlabels[i])
-		bar := makeBar(y, ypadding, step, TEXTURE)
-		line += bar
-		line += fmt.Sprintf(" %.2f ", y)
+		line += makeBar(y, pixelValue, TEXTURE)
+		line += fmt.Sprintf(fmt.Sprintf(" %%.%df ", DECIMAL_PLACES), y)
+
+		// fill
 		lineLength := strings.Count(line, "") - 1
-		fmt.Printf(
-			"%s%s %s\n",
-			line,
-			strings.Repeat(" ", width-lineLength),
-			MIDDLE_VERTICAL_CHAR,
-		)
+		line += strings.Repeat(" ", width-lineLength-1)
+
+		// border
+		line += string(MIDDLE_VERTICAL_CHAR)
+		rows = append(rows, line)
 	}
-	fmt.Printf("%s %s%s%s\n",
-		strings.Repeat(" ", xMaxLength),
-		BOTTOM_LEFT_CHAR,
-		strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), width-xMaxLength-1),
-		BOTTOM_RIGHT_CHAR,
-	)
+
+	chart := Chart{
+		Title:        title,
+		XLabelWs:     strings.Repeat(" ", xMaxLength),
+		TopBorder:    strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), width-xMaxLength-1-1-strings.Count(title, "")-1),
+		BottomBorder: strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), width-xMaxLength-1-1-1),
+		Rows:         rows,
+	}
+
+	tmpl, err := template.New("chart").Parse(CHART_TEMPLATE)
+	if err != nil {
+		log.Fatalf("invalid chart template: %v\n", err)
+	}
+
+	err = tmpl.Execute(os.Stdout, chart)
+	if err != nil {
+		log.Fatalf("failed to render template: %v\n", err)
+	}
 }
 
-func makeBar(x float64, stepWidth int, step int, texture []byte) string {
-	pixelValue := float64(step) / float64(stepWidth)
-	return strings.Repeat(string(texture), int(math.Ceil(float64(x)/pixelValue)))
+func makeBar(x float64, pixelValue float64, texture []byte) string {
+	return strings.Repeat(string(texture), int(math.Ceil(x*pixelValue)))
 }
 
 func process(file string, colindex string) ([]string, []float64) {
-	result, err := utils.Query(fmt.Sprintf(`select #%s, count(*) as cnt from '%s' group by 1 order by cnt desc`, colindex, file))
+	result, err := utils.Query(
+		fmt.Sprintf(
+			`select #%s, count(*) as cnt from '%s' group by 1 order by cnt desc`,
+			colindex,
+			file,
+		),
+	)
 	if err != nil {
 		log.Fatalf("failed to process given file: %v", err)
 	}
@@ -120,4 +133,49 @@ func process(file string, colindex string) ([]string, []float64) {
 	}
 
 	return xs, ys
+}
+
+func makeTitle(filename string, width int) string {
+	width -= 2 // padding
+	formats := map[int]string{0: " histogram of '%s' ", 1: " hist of '%s' ", 2: " hist: '%s' ", 3: "hist"}
+
+	var title string
+	var length int
+	for i := 0; i < len(formats); i++ {
+		title = fmt.Sprintf(formats[i], filename)
+		length = strings.Count(title, "") - 1
+		if length <= width {
+			return title
+		}
+	}
+
+	// skip title
+	return string(MIDDLE_HORIZONTAL_CHAR)
+}
+
+func maxStringWidth(xs []string) int {
+	m := 0
+	for _, x := range xs {
+		if strings.Count(x, "") > m {
+			m = strings.Count(x, "")
+		}
+	}
+
+	return m - 1
+}
+
+func maxFloatWidth(xs []float64, places int) int {
+	largest := slices.Max(xs)
+	digits := 1 + places
+	for largest > 1 {
+		largest /= 10
+		digits++
+	}
+	return digits
+}
+
+func scale(xs []float64, barWidth int) float64 {
+	largest := slices.Max(xs)
+	pixelValue := (float64(barWidth) / largest)
+	return pixelValue
 }

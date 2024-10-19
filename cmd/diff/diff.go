@@ -236,7 +236,7 @@ func diff(keys keySpec, left string, right string, metrics metricSpec, writer io
 
 	if output == "" {
 		maxRows := 5
-		utils.Render(writer, result, maxRows)
+		result.Render(writer, maxRows)
 	} else {
 		result.ToCsv(writer)
 	}
