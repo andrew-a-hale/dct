@@ -8,24 +8,22 @@ import (
 	"os"
 	"path"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	defaultWriter = os.Stdout
-	defaultLines  = 10
-	lines         string
-	linesParsed   int
+	defaultWriter       = os.Stdout
+	defaultLines  int32 = 10
+	lines         int32
 	output        string
 	writer        io.Writer
 )
 
 func init() {
 	PeekCmd.Flags().StringVarP(&output, "output", "o", "", "write to output file")
-	PeekCmd.Flags().StringVarP(&lines, "lines", "n", "", "number of lines to output")
+	PeekCmd.Flags().Int32VarP(&lines, "lines", "n", 0, "number of lines to output")
 }
 
 var PeekCmd = &cobra.Command{
@@ -46,19 +44,12 @@ var PeekCmd = &cobra.Command{
 			}
 		}
 
-		linesParsed := defaultLines
-		if lines != "" {
-			x, err := strconv.ParseInt(lines, 10, 0)
-			if x < 1 {
-				log.Printf("Error: expected -n to be at least 1 defaulting to %v\n", defaultLines)
-			}
-			if err != nil {
-				log.Printf("Warning: failed to parse -n arg defaulting to %v\n", defaultLines)
-			}
-			linesParsed = int(x)
+		if lines < 1 {
+			log.Printf("Error: expected -n to be at least 1 defaulting to %v\n", defaultLines)
+			lines = defaultLines
 		}
 
-		peek(file, linesParsed, writer)
+		peek(file, lines, writer)
 	},
 }
 
@@ -78,7 +69,7 @@ func parseFileArg(args []string) string {
 	return ""
 }
 
-func peek(file string, lines int, writer io.Writer) {
+func peek(file string, lines int32, writer io.Writer) {
 	query := fmt.Sprintf("select * from '%s' limit %d", file, lines)
 	result, err := utils.Query(query)
 	if err != nil {
@@ -86,7 +77,7 @@ func peek(file string, lines int, writer io.Writer) {
 	}
 
 	if output == "" {
-		result.Render(writer, lines)
+		result.Render(writer, int(lines))
 	} else {
 		result.ToCsv(writer)
 	}

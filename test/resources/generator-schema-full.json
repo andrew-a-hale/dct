@@ -1,0 +1,86 @@
+[
+  {
+    "field": "first_name",
+    "source": "randomAscii",
+    "config": {
+      "length": 10
+    }
+  },
+  {
+    "field": "age",
+    "source": "randomUniform",
+    "config": {
+      "min": 0,
+      "max": 100
+    }
+  },
+  {
+    "field": "height",
+    "source": "randomNormal",
+    "config": {
+      "mean": 175,
+      "std": 10,
+      "digits": 5,
+      "decimals": 2
+    }
+  },
+  {
+    "field": "weight",
+    "source": "randomNormal",
+    "config": {
+      "mean": 70,
+      "std": 10,
+      "digits": 5,
+      "decimals": 2
+    }
+  },
+  {
+    "field": "siblings",
+    "source": "randomPoisson",
+    "config": {
+      "mean": 2
+    }
+  },
+  {
+    "field": "last_name",
+    "source": "lastNames"
+  },
+  {
+    "field": "full_name",
+    "source": "derived",
+    "config": {
+      "data_type": "string",
+      "expression": "first_name + last_name"
+    }
+  },
+  {
+    "field": "bmi",
+    "source": "derived",
+    "config": {
+      "data_type": "int",
+      "expression": "weight / (height ^ 2)"
+    }
+  },
+  {
+    "field": "date_of_birth",
+    "source": "randomDate",
+    "config": {
+      "min": "1970-01-01",
+      "max": "1999-12-31"
+    }
+  },
+  {
+    "field": "last_notification_at",
+    "source": "randomDatetime",
+    "config": {
+      "tz": "UTC"
+    }
+  },
+  {
+    "field": "last_slept_at",
+    "source": "randomTime",
+    "config": {
+      "max": "23:59"
+    }
+  }
+]

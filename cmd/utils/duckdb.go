@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -84,6 +85,8 @@ func Query(query string) (Result, error) {
 				} else if x, ok := (*s).(int32); ok {
 					tmp = append(tmp, fmt.Sprintf("%d", x))
 				} else if x, ok := (*s).(int64); ok {
+					tmp = append(tmp, fmt.Sprintf("%d", x))
+				} else if x, ok := (*s).(*big.Int); ok {
 					tmp = append(tmp, fmt.Sprintf("%d", x))
 				} else if x, ok := (*s).(float64); ok {
 					tmp = append(tmp, fmt.Sprintf("%f", x))

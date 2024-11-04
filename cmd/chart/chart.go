@@ -11,10 +11,15 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
+
+func init() {
+	ChartCmd.Flags().Int32VarP(&width, "width", "w", 0, "width of the chart")
+}
 
 var (
 	TEXTURE                []byte = []byte("╍")
@@ -22,6 +27,7 @@ var (
 	MIDDLE_HORIZONTAL_CHAR []byte = []byte("─")
 	MIDDLE_VERTICAL_CHAR   []byte = []byte("│")
 	DECIMAL_PLACES         int    = 2
+	width                  int32
 )
 
 type Chart struct {
@@ -39,30 +45,34 @@ var CHART_TEMPLATE string = `
 `
 
 var ChartCmd = &cobra.Command{
-	Use:   "chart [file] [col-index (1-based)]",
-	Short: "create a simple histogram chart",
+	Use:   "chart [file] [col-index (1-based)] [agg]",
+	Short: "create a simple bar chart",
 	Long:  "",
-	Args:  cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
+	Args:  cobra.MatchAll(cobra.MinimumNArgs(3), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		xs, ys := process(args[0], args[1])
+		checkArgs(args)
+		xs, ys := processAgg(args)
 		filename := filepath.Base(args[0])
 		draw(filename, xs, ys)
 	},
 }
 
 func draw(filename string, xs []string, ys []float64) {
+	width := int(width)
 	termWidth, _, err := term.GetSize(int(os.Stdin.Fd()))
 	if err != nil {
-		log.Fatal("failed to get terminal size")
+		log.Fatalf("failed to get terminal size: %v\n", err)
 	}
 
-	width := int(math.Ceil(float64(termWidth) / 4.0))
 	xMaxLength := maxStringWidth(xs)
-	yMaxLength := maxFloatWidth(ys, DECIMAL_PLACES)
-	barWidth := (width - xMaxLength - 3 - yMaxLength - 3)
-	titleWidth := (width - xMaxLength - 3 - 1)
-	pixelValue := scale(ys, barWidth)
-	title := makeTitle(filename, titleWidth)
+	minWidth := xMaxLength + 20
+	if termWidth < minWidth && width > 0 {
+		log.Fatal("terminal width is too small to render chart\n")
+	}
+	if width < minWidth {
+		fmt.Printf("provided width is too small, defaulting to %d\n", minWidth)
+	}
+	termWidth = max(width, minWidth)
 
 	var xlabels []string
 	for _, x := range xs {
@@ -70,6 +80,12 @@ func draw(filename string, xs []string, ys []float64) {
 		leading := strings.Repeat(" ", xMaxLength-xLength)
 		xlabels = append(xlabels, fmt.Sprintf("%s%s %s ", leading, x, DIV_CHAR))
 	}
+
+	yMaxLength := maxFloatWidth(ys, DECIMAL_PLACES)
+	barWidth := (termWidth - xMaxLength - 3 - yMaxLength - 3)
+	titleWidth := (termWidth - xMaxLength - 3 - 1)
+	pixelValue := scale(ys, barWidth)
+	title := makeTitle(filename, titleWidth)
 
 	var rows []string
 	for i, y := range ys {
@@ -80,7 +96,7 @@ func draw(filename string, xs []string, ys []float64) {
 
 		// fill
 		lineLength := strings.Count(line, "") - 1
-		line += strings.Repeat(" ", width-lineLength-1)
+		line += strings.Repeat(" ", termWidth-lineLength-1)
 
 		// border
 		line += string(MIDDLE_VERTICAL_CHAR)
@@ -90,8 +106,8 @@ func draw(filename string, xs []string, ys []float64) {
 	chart := Chart{
 		Title:        title,
 		XLabelWs:     strings.Repeat(" ", xMaxLength),
-		TopBorder:    strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), width-xMaxLength-1-1-strings.Count(title, "")-1),
-		BottomBorder: strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), width-xMaxLength-1-1-1),
+		TopBorder:    strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), termWidth-xMaxLength-1-1-strings.Count(title, "")-1),
+		BottomBorder: strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), termWidth-xMaxLength-1-1-1),
 		Rows:         rows,
 	}
 
@@ -110,12 +126,44 @@ func makeBar(x float64, pixelValue float64, texture []byte) string {
 	return strings.Repeat(string(texture), int(math.Ceil(x*pixelValue)))
 }
 
-func process(file string, colindex string) ([]string, []float64) {
+func checkArgs(args []string) (filename, colIndex, agg string) {
+	filename = args[0]
+	_, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("file does not exist: %v\n", err)
+	}
+
+	colIndex = args[1]
+	for _, s := range strings.Split(colIndex, "") {
+		r := []rune(s)[0]
+		if !unicode.IsDigit(r) {
+			log.Fatalf("invalid col index: %v\n", err)
+		}
+	}
+
+	agg = args[2]
+	utils.CheckAgg(agg)
+
+	return filename, colIndex, agg
+}
+
+func processAgg(args []string) ([]string, []float64) {
+	// format custom agg sql
+	var agg string
+	switch args[2] {
+	case utils.COUNT_DISTINCT:
+		agg = fmt.Sprintf("count(distinct #%s)", args[1])
+	default:
+		agg = fmt.Sprintf("%s(#%s)", args[2], args[1])
+	}
+
+	// read file
 	result, err := utils.Query(
 		fmt.Sprintf(
-			`select #%s, count(*) as cnt from '%s' group by 1 order by cnt desc`,
-			colindex,
-			file,
+			`select #%s, %s as agg from '%s' group by 1 order by agg desc`,
+			args[1],
+			agg,
+			args[0],
 		),
 	)
 	if err != nil {
@@ -137,7 +185,7 @@ func process(file string, colindex string) ([]string, []float64) {
 
 func makeTitle(filename string, width int) string {
 	width -= 2 // padding
-	formats := map[int]string{0: " histogram of '%s' ", 1: " hist of '%s' ", 2: " hist: '%s' ", 3: "hist"}
+	formats := map[int]string{0: " histogram of '%s' ", 1: " hist of '%s' ", 2: " hist: '%s' ", 3: "'%s'"}
 
 	var title string
 	var length int
@@ -167,7 +215,7 @@ func maxStringWidth(xs []string) int {
 func maxFloatWidth(xs []float64, places int) int {
 	largest := slices.Max(xs)
 	digits := 1 + places
-	for largest > 1 {
+	for largest >= 1 {
 		largest /= 10
 		digits++
 	}

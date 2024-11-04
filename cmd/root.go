@@ -4,6 +4,7 @@ import (
 	"dct/cmd/art"
 	"dct/cmd/chart"
 	"dct/cmd/diff"
+	"dct/cmd/generator"
 	"dct/cmd/peek"
 	"dct/cmd/version"
 	"log"
@@ -23,6 +24,7 @@ func init() {
 	rootCmd.AddCommand(chart.ChartCmd)
 	rootCmd.AddCommand(peek.PeekCmd)
 	rootCmd.AddCommand(diff.DiffCmd)
+	rootCmd.AddCommand(generator.GenCmd)
 }
 
 func Execute() {

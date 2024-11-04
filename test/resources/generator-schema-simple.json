@@ -1,0 +1,27 @@
+[
+  {
+    "field": "first_name",
+    "data_type": "string",
+    "source": "randomAscii",
+    "config": {
+      "length": 10
+    }
+  },
+  {
+    "field": "age",
+    "source": "randomUniformInt",
+    "config": {
+      "min": 0,
+      "max": 100
+    }
+  },
+  {
+    "field": "height",
+    "source": "randomNormal",
+    "config": {
+      "mean": 175,
+      "std": 10,
+      "decimals": 2
+    }
+  }
+]

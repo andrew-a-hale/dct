@@ -19,6 +19,9 @@
       - {agg: {left: col, right: col}, ...}
       - {file}.json
       - aggs: mean, median, min, max, count_distinct
+- dct chart {file} {colIndex} {agg}
+  - eg. `dct chart left.csv 1 sum`
+  - error with testing it
 
 ## todo
 - use viper
@@ -27,5 +30,3 @@
     - output
     - n lines
     - schema
-- add cli chart
-  - dct chart file x y
