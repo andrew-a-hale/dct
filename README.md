@@ -19,6 +19,7 @@
       - {agg: {left: col, right: col}, ...}
       - {file}.json
       - aggs: mean, median, min, max, count_distinct
+- dct art
 - dct chart {file} {colIndex} {agg}
   - eg. `dct chart left.csv 1 sum`
   - error with testing it
