@@ -41,7 +41,7 @@ func CheckFileHasRows(file string) (bool, error) {
 }
 
 func Query(query string) (Result, error) {
-	conn, err := sql.Open("duckdb", "")
+	conn, err := sql.Open("duckdb", "sources.db")
 	if err != nil {
 		return Result{}, err
 	}

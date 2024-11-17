@@ -1,6 +1,6 @@
 [
   {
-    "field": "first_name",
+    "field": "id",
     "data_type": "string",
     "source": "randomAscii",
     "config": {
@@ -23,5 +23,20 @@
       "std": 10,
       "decimals": 2
     }
+  },
+  {
+    "field": "siblings",
+    "source": "randomPoisson",
+    "config": {
+      "lambda": 2
+    }
+  },
+  {
+    "field": "first_name",
+    "source": "firstNames"
+  },
+  {
+    "field": "last_name",
+    "source": "lastNames"
   }
 ]

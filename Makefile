@@ -15,4 +15,5 @@ chart:
 	go run main.go chart test/resources/chart.csv 1 count ;
 
 gen:
+	./init.sh
 	go run main.go gen -n 10 -s test/resources/generator-schema-simple.json ;

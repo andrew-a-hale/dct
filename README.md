@@ -31,3 +31,4 @@
     - output
     - n lines
     - schema
+  - dct gen-sources

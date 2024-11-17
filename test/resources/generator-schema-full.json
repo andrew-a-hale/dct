@@ -38,7 +38,7 @@
     "field": "siblings",
     "source": "randomPoisson",
     "config": {
-      "mean": 2
+      "lambda": 2
     }
   },
   {
