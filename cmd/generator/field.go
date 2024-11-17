@@ -13,7 +13,60 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"time"
 )
+
+func parseSchema(rawSchema string) []Field {
+	var schema []byte
+	if fs.ValidPath(rawSchema) {
+		f, err := os.Open(rawSchema)
+		if err != nil {
+			log.Fatalf("failed to open schema file: %v\n", err)
+		}
+		defer f.Close()
+
+		schema, err = io.ReadAll(f)
+		if err != nil {
+			log.Fatalf("failed to open schema file: %v\n", err)
+		}
+	}
+
+	var fields []interface{}
+	err := json.Unmarshal(schema, &fields)
+	if err != nil {
+		log.Fatalf("failed to parse schema: %v\n", err)
+	}
+
+	var parsedFields []Field
+	for _, field := range fields {
+		reflectedField := reflect.ValueOf(field).MapIndex(reflect.ValueOf("field"))
+		reflectedSource := reflect.ValueOf(field).MapIndex(reflect.ValueOf("source"))
+
+		j, err := json.Marshal(field)
+		if err != nil {
+			log.Fatalf("failed to stringify field '%s'\n", reflectedField)
+		}
+
+		switch reflectedSource.Interface() {
+		case "randomAscii":
+			parsedFields = append(parsedFields, ParseField[RandomAsciiField](j))
+		case "randomUniformInt":
+			parsedFields = append(parsedFields, ParseField[RandomUniformIntField](j))
+		case "randomNormal":
+			parsedFields = append(parsedFields, ParseField[RandomNormalField](j))
+		case "randomPoisson":
+			parsedFields = append(parsedFields, ParseField[RandomPoissonField](j))
+		case "firstNames":
+			parsedFields = append(parsedFields, ParseField[FirstNameField](j))
+		case "lastNames":
+			parsedFields = append(parsedFields, ParseField[LastNameField](j))
+		case "randomDatetime":
+			parsedFields = append(parsedFields, ParseField[RandomDatetimeField](j))
+		}
+	}
+
+	return parsedFields
+}
 
 type Field interface {
 	Generate(int)
@@ -273,52 +326,77 @@ func (s *FirstNameField) GetValue(i int) string {
 	return s.Data[i]
 }
 
-func parseSchema(rawSchema string) []Field {
-	var schema []byte
-	if fs.ValidPath(rawSchema) {
-		f, err := os.Open(rawSchema)
-		if err != nil {
-			log.Fatalf("failed to open schema file: %v\n", err)
-		}
-		defer f.Close()
+type RandomDatetimeSource struct {
+	Source string `json:"source"`
+	Config struct {
+		Tz  string `json:"tz"`
+		Min string `json:"min"`
+		Max string `json:"max"`
+	} `json:"config"`
+}
 
-		schema, err = io.ReadAll(f)
-		if err != nil {
-			log.Fatalf("failed to open schema file: %v\n", err)
-		}
-	}
+type RandomDatetimeField struct {
+	Field    string `json:"field"`
+	DataType string `json:"data_type"`
+	Data     []time.Time
+	RandomDatetimeSource
+}
 
-	var fields []interface{}
-	err := json.Unmarshal(schema, &fields)
+func (s *RandomDatetimeField) Generate(n int) {
+	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
+	MIN_TIME := time.Unix(0, 0)
+	var res []time.Time
+
+	loc, err := time.LoadLocation(s.Config.Tz)
 	if err != nil {
-		log.Fatalf("failed to parse schema: %v\n", err)
+		log.Fatalf("failed to parse tz: %v\n", err)
 	}
 
-	var parsedFields []Field
-	for _, field := range fields {
-		reflectedField := reflect.ValueOf(field).MapIndex(reflect.ValueOf("field"))
-		reflectedSource := reflect.ValueOf(field).MapIndex(reflect.ValueOf("source"))
-
-		j, err := json.Marshal(field)
+	var parsedDtMin time.Time
+	if s.Config.Min != "" {
+		parsedDtMin, err = time.ParseInLocation("2006-01-02 15:04:05", s.Config.Min, loc)
 		if err != nil {
-			log.Fatalf("failed to stringify field '%s'\n", reflectedField)
+			log.Fatalf("failed to parse max datetime: %v\n", err)
 		}
-
-		switch reflectedSource.Interface() {
-		case "randomAscii":
-			parsedFields = append(parsedFields, ParseField[RandomAsciiField](j))
-		case "randomUniformInt":
-			parsedFields = append(parsedFields, ParseField[RandomUniformIntField](j))
-		case "randomNormal":
-			parsedFields = append(parsedFields, ParseField[RandomNormalField](j))
-		case "randomPoisson":
-			parsedFields = append(parsedFields, ParseField[RandomPoissonField](j))
-		case "firstNames":
-			parsedFields = append(parsedFields, ParseField[FirstNameField](j))
-		case "lastNames":
-			parsedFields = append(parsedFields, ParseField[LastNameField](j))
-		}
+	} else {
+		parsedDtMin = MIN_TIME
 	}
 
-	return parsedFields
+	lb := MIN_TIME.Unix()
+	if parsedDtMin.After(MIN_TIME) {
+		lb = parsedDtMin.Unix()
+	}
+
+	var parsedDtMax time.Time
+	if s.Config.Max != "" {
+		parsedDtMax, err = time.ParseInLocation("2006-01-02 15:04:05", s.Config.Max, loc)
+		if err != nil {
+			log.Fatalf("failed to parse max datetime: %v\n", err)
+		}
+	} else {
+		parsedDtMax = MAX_TIME
+	}
+
+	ub := MAX_TIME.Unix()
+	if parsedDtMax.Before(MAX_TIME) {
+		ub = parsedDtMax.Unix()
+	}
+
+	for i := 0; i < n; i++ {
+		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
+		res = append(res, dt)
+	}
+	s.Data = res
+}
+
+func (s *RandomDatetimeField) GetValues() []string {
+	var res []string
+	for _, dt := range s.Data {
+		res = append(res, dt.Format(time.RFC3339))
+	}
+	return res
+}
+
+func (s *RandomDatetimeField) GetValue(i int) string {
+	return s.Data[i].Format(time.RFC3339)
 }
