@@ -9,6 +9,7 @@
   },
   {
     "field": "age",
+    "data_type": "int",
     "source": "randomUniformInt",
     "config": {
       "min": 0,
@@ -17,6 +18,7 @@
   },
   {
     "field": "height",
+    "data_type": "float",
     "source": "randomNormal",
     "config": {
       "mean": 175,
@@ -25,22 +27,60 @@
     }
   },
   {
+    "field": "weight",
+    "data_type": "float",
+    "source": "randomNormal",
+    "config": {
+      "mean": 75,
+      "std": 10,
+      "decimals": 2
+    }
+  },
+  {
     "field": "siblings",
+    "data_type": "int",
     "source": "randomPoisson",
     "config": {
       "lambda": 2
     }
   },
   {
+    "field": "bmi",
+    "data_type": "int",
+    "source": "derived",
+    "config": {
+      "fields": [
+        "weight",
+        "height"
+      ],
+      "expression": "weight / (height ** 2)"
+    }
+  },
+  {
     "field": "first_name",
+    "data_type": "string",
     "source": "firstNames"
   },
   {
     "field": "last_name",
+    "data_type": "string",
     "source": "lastNames"
   },
   {
+    "field": "full_name",
+    "source": "derived",
+    "data_type": "string",
+    "config": {
+      "fields": [
+        "first_name",
+        "last_name"
+      ],
+      "expression": "first_name + ' ' + last_name"
+    }
+  },
+  {
     "field": "date_of_birth",
+    "data_type": "string",
     "source": "randomDate",
     "config": {
       "min": "1970-01-01",
@@ -49,6 +89,7 @@
   },
   {
     "field": "last_notification_at",
+    "data_type": "string",
     "source": "randomDatetime",
     "config": {
       "tz": "UTC",
@@ -58,9 +99,11 @@
   },
   {
     "field": "last_slept_at",
+    "data_type": "string",
     "source": "randomTime",
     "config": {
-      "max": "23:59"
+      "min": "09:00:00",
+      "max": "23:59:00"
     }
   }
 ]

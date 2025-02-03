@@ -47,25 +47,25 @@
   },
   {
     "field": "full_name",
+    "data_type": "string",
     "source": "derived",
     "config": {
       "fields": [
         "first_name",
         "last_name"
       ],
-      "data_type": "string",
       "expression": "first_name + last_name"
     }
   },
   {
     "field": "bmi",
+    "data_type": "int",
     "source": "derived",
     "config": {
       "fields": [
         "weight",
         "height"
       ],
-      "data_type": "int",
       "expression": "weight / (height ^ 2)"
     }
   },

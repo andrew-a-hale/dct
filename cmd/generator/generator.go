@@ -1,10 +1,12 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"reflect"
 
 	"github.com/spf13/cobra"
 )
@@ -40,13 +42,36 @@ var GenCmd = &cobra.Command{
 			out = os.Stdout
 		}
 
+		fieldMap := make(map[string]int)
+		ctx := context.Background()
 		schema := parseSchema(rawSchema)
-		for _, f := range schema {
-			f.Generate(lines)
+		for i, f := range schema {
+			if f.GetSource() == "derived" {
+				continue
+			}
+			fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
+			f.Generate(lines, ctx)
 		}
 
-		for i, r := range buildExport(schema, out).Rows {
-			fmt.Printf("%d: %v\n", i, r)
+		ctx = context.WithValue(ctx, "schema", schema)
+		ctx = context.WithValue(ctx, "fieldMap", fieldMap)
+		for _, f := range schema {
+			if f.GetSource() != "derived" {
+				continue
+			}
+			f.Generate(lines, ctx)
+		}
+
+		for _, r := range buildExport(schema, out).Rows {
+			r := r.([]any)
+			for i, v := range r {
+				fmt.Printf("%v", v)
+				if i < len(r)-1 {
+					fmt.Printf(", ")
+				} else {
+					fmt.Printf("\n")
+				}
+			}
 		}
 	},
 }

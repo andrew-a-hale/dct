@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"dct/cmd/utils"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,22 @@ import (
 	"slices"
 	"strconv"
 	"time"
+
+	"github.com/expr-lang/expr"
 )
+
+func ParseField[T any](raw []byte) *T {
+	var parsedField *T
+	err := json.Unmarshal(raw, &parsedField)
+	if err != nil {
+		log.Fatalf(
+			"failed to parse schema field in '%s'\n",
+			string(raw),
+		)
+	}
+
+	return parsedField
+}
 
 func parseSchema(rawSchema string) []Field {
 	var schema []byte
@@ -62,6 +78,12 @@ func parseSchema(rawSchema string) []Field {
 			parsedFields = append(parsedFields, ParseField[LastNameField](j))
 		case "randomDatetime":
 			parsedFields = append(parsedFields, ParseField[RandomDatetimeField](j))
+		case "randomTime":
+			parsedFields = append(parsedFields, ParseField[RandomTimeField](j))
+		case "randomDate":
+			parsedFields = append(parsedFields, ParseField[RandomDateField](j))
+		case "derived":
+			parsedFields = append(parsedFields, ParseField[DerivedField](j))
 		}
 	}
 
@@ -69,7 +91,8 @@ func parseSchema(rawSchema string) []Field {
 }
 
 type Field interface {
-	Generate(int)
+	Generate(int, context.Context)
+	GetSource() string
 	GetValues() []string
 	GetValue(int) string
 }
@@ -89,7 +112,7 @@ type RandomAsciiField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s *RandomAsciiField) Generate(n int) {
+func (s *RandomAsciiField) Generate(n int, ctx context.Context) {
 	var res []string
 	for i := 0; i < n; i++ {
 		var sb string
@@ -110,6 +133,10 @@ func (s *RandomAsciiField) GetValue(i int) string {
 	return s.Data[i]
 }
 
+func (s *RandomAsciiField) GetSource() string {
+	return s.Source
+}
+
 type RandomUniformIntSource struct {
 	Source string `json:"source"`
 	Config struct {
@@ -125,7 +152,7 @@ type RandomUniformIntField struct {
 	RandomUniformIntSource
 }
 
-func (s *RandomUniformIntField) Generate(n int) {
+func (s *RandomUniformIntField) Generate(n int, ctx context.Context) {
 	var res []int
 	var x int
 	for i := 0; i < n; i++ {
@@ -140,12 +167,15 @@ func (s *RandomUniformIntField) GetValues() []string {
 	for _, v := range s.Data {
 		res = append(res, fmt.Sprintf("%d", v))
 	}
-	fmt.Println(res)
 	return res
 }
 
 func (s *RandomUniformIntField) GetValue(i int) string {
 	return strconv.Itoa(s.Data[i])
+}
+
+func (s *RandomUniformIntField) GetSource() string {
+	return s.Source
 }
 
 type RandomNormalSource struct {
@@ -164,7 +194,7 @@ type RandomNormalField struct {
 	RandomNormalSource
 }
 
-func (s *RandomNormalField) Generate(n int) {
+func (s *RandomNormalField) Generate(n int, ctx context.Context) {
 	var res []float64
 	var x float64
 	for i := 0; i < n; i++ {
@@ -191,6 +221,10 @@ func (s *RandomNormalField) GetValue(i int) string {
 	return formatFloat(s.Data[i], s.Config.Decimals)
 }
 
+func (s *RandomNormalField) GetSource() string {
+	return s.Source
+}
+
 type RandomPoissonSource struct {
 	Source string `json:"source"`
 	Config struct {
@@ -205,7 +239,7 @@ type RandomPoissonField struct {
 	RandomPoissonSource
 }
 
-func (s *RandomPoissonField) Generate(n int) {
+func (s *RandomPoissonField) Generate(n int, ctx context.Context) {
 	var res []int
 	var x int
 	for i := 0; i < n; i++ {
@@ -241,17 +275,8 @@ func (s *RandomPoissonField) GetValue(i int) string {
 	return strconv.Itoa(s.Data[i])
 }
 
-func ParseField[T any](raw []byte) *T {
-	var parsedField *T
-	err := json.Unmarshal(raw, &parsedField)
-	if err != nil {
-		log.Fatalf(
-			"failed to parse schema field in '%s'\n",
-			string(raw),
-		)
-	}
-
-	return parsedField
+func (s *RandomPoissonField) GetSource() string {
+	return s.Source
 }
 
 type LastNameSource struct {
@@ -261,11 +286,11 @@ type LastNameSource struct {
 type LastNameField struct {
 	Field    string `json:"field"`
 	DataType string `json:"data_type"`
-	Data     []string
 	LastNameSource
+	Data []string
 }
 
-func (s *LastNameField) Generate(n int) {
+func (s *LastNameField) Generate(n int, ctx context.Context) {
 	query := fmt.Sprintf(`
 select name
 from last_names
@@ -290,6 +315,10 @@ func (s *LastNameField) GetValue(i int) string {
 	return s.Data[i]
 }
 
+func (s *LastNameField) GetSource() string {
+	return s.Source
+}
+
 type FirstNameSource struct {
 	Source string `json:"source"`
 }
@@ -297,11 +326,11 @@ type FirstNameSource struct {
 type FirstNameField struct {
 	Field    string `json:"field"`
 	DataType string `json:"data_type"`
-	Data     []string
 	FirstNameSource
+	Data []string
 }
 
-func (s *FirstNameField) Generate(n int) {
+func (s *FirstNameField) Generate(n int, ctx context.Context) {
 	query := fmt.Sprintf(`
 select name
 from first_names
@@ -326,6 +355,10 @@ func (s *FirstNameField) GetValue(i int) string {
 	return s.Data[i]
 }
 
+func (s *FirstNameField) GetSource() string {
+	return s.Source
+}
+
 type RandomDatetimeSource struct {
 	Source string `json:"source"`
 	Config struct {
@@ -336,25 +369,25 @@ type RandomDatetimeSource struct {
 }
 
 type RandomDatetimeField struct {
+	RandomDatetimeSource
 	Field    string `json:"field"`
 	DataType string `json:"data_type"`
 	Data     []time.Time
-	RandomDatetimeSource
 }
 
-func (s *RandomDatetimeField) Generate(n int) {
+func (s *RandomDatetimeField) Generate(n int, ctx context.Context) {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
-	var res []time.Time
 
 	loc, err := time.LoadLocation(s.Config.Tz)
 	if err != nil {
 		log.Fatalf("failed to parse tz: %v\n", err)
 	}
 
+	// handle min datetime
 	var parsedDtMin time.Time
 	if s.Config.Min != "" {
-		parsedDtMin, err = time.ParseInLocation("2006-01-02 15:04:05", s.Config.Min, loc)
+		parsedDtMin, err = time.ParseInLocation(time.DateTime, s.Config.Min, loc)
 		if err != nil {
 			log.Fatalf("failed to parse max datetime: %v\n", err)
 		}
@@ -367,9 +400,10 @@ func (s *RandomDatetimeField) Generate(n int) {
 		lb = parsedDtMin.Unix()
 	}
 
+	// handle max datetime
 	var parsedDtMax time.Time
 	if s.Config.Max != "" {
-		parsedDtMax, err = time.ParseInLocation("2006-01-02 15:04:05", s.Config.Max, loc)
+		parsedDtMax, err = time.ParseInLocation(time.DateTime, s.Config.Max, loc)
 		if err != nil {
 			log.Fatalf("failed to parse max datetime: %v\n", err)
 		}
@@ -382,8 +416,9 @@ func (s *RandomDatetimeField) Generate(n int) {
 		ub = parsedDtMax.Unix()
 	}
 
+	var res []time.Time
 	for i := 0; i < n; i++ {
-		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
+		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc)
 		res = append(res, dt)
 	}
 	s.Data = res
@@ -399,4 +434,219 @@ func (s *RandomDatetimeField) GetValues() []string {
 
 func (s *RandomDatetimeField) GetValue(i int) string {
 	return s.Data[i].Format(time.RFC3339)
+}
+
+func (s *RandomDatetimeField) GetSource() string {
+	return s.Source
+}
+
+type RandomDateSource struct {
+	Source string `json:"source"`
+	Config struct {
+		Min string `json:"min"`
+		Max string `json:"max"`
+	} `json:"config"`
+}
+
+type RandomDateField struct {
+	RandomDateSource
+	Field    string `json:"field"`
+	DataType string `json:"data_type"`
+	Data     []time.Time
+}
+
+func (s *RandomDateField) Generate(n int, ctx context.Context) {
+	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
+	MIN_TIME := time.Unix(0, 0)
+
+	// handle min date
+	var err error
+	var parsedDtMin time.Time
+	if s.Config.Min != "" {
+		parsedDtMin, err = time.Parse(time.DateOnly, s.Config.Min)
+		if err != nil {
+			log.Fatalf("failed to parse max date: %v\n", err)
+		}
+	} else {
+		parsedDtMin = MIN_TIME
+	}
+
+	lb := MIN_TIME.Unix()
+	if parsedDtMin.After(MIN_TIME) {
+		lb = parsedDtMin.Unix()
+	}
+
+	// handle max date
+	var parsedDtMax time.Time
+	if s.Config.Max != "" {
+		parsedDtMax, err = time.Parse(time.DateOnly, s.Config.Max)
+		if err != nil {
+			log.Fatalf("failed to parse max date: %v\n", err)
+		}
+	} else {
+		parsedDtMax = MAX_TIME
+	}
+
+	ub := MAX_TIME.Unix()
+	if parsedDtMax.Before(MAX_TIME) {
+		ub = parsedDtMax.Unix()
+	}
+
+	var res []time.Time
+	for i := 0; i < n; i++ {
+		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0)
+		res = append(res, dt)
+	}
+	s.Data = res
+}
+
+func (s *RandomDateField) GetValues() []string {
+	var res []string
+	for _, dt := range s.Data {
+		res = append(res, dt.Format(time.DateOnly))
+	}
+	return res
+}
+
+func (s *RandomDateField) GetValue(i int) string {
+	return s.Data[i].Format(time.DateOnly)
+}
+
+func (s *RandomDateField) GetSource() string {
+	return s.Source
+}
+
+type RandomTimeSource struct {
+	Source string `json:"source"`
+	Config struct {
+		Min string `json:"min"`
+		Max string `json:"max"`
+	} `json:"config"`
+}
+
+type RandomTimeField struct {
+	RandomDateSource
+	Field    string `json:"field"`
+	DataType string `json:"data_type"`
+	Data     []time.Time
+}
+
+func (s *RandomTimeField) Generate(n int, ctx context.Context) {
+	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
+	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
+
+	// handle min time
+	var err error
+	var parsedDtMin time.Time
+	if s.Config.Min != "" {
+		if len(s.Config.Min) < 8 {
+			log.Fatalf("invalid format for min must be HH:MM:SS, not %v\n", s.Config.Min)
+		}
+		parsedDtMin, err = time.ParseInLocation(time.TimeOnly, s.Config.Min, time.UTC)
+		if err != nil {
+			log.Fatalf("failed to parse max time: %v\n", err)
+		}
+	} else {
+		parsedDtMin = MIN_TIME
+	}
+
+	lb := MIN_TIME.Unix()
+	if parsedDtMin.After(MIN_TIME) {
+		lb = parsedDtMin.Unix()
+	}
+
+	// handle max time
+	var parsedDtMax time.Time
+	if s.Config.Max != "" {
+		if len(s.Config.Max) < 8 {
+			log.Fatalf("invalid format for max must be HH:MM:SS, not %v\n", s.Config.Max)
+		}
+		parsedDtMax, err = time.ParseInLocation(time.TimeOnly, s.Config.Max, time.UTC)
+		if err != nil {
+			log.Fatalf("failed to parse max time: %v\n", err)
+		}
+	} else {
+		parsedDtMax = MAX_TIME
+	}
+
+	ub := MAX_TIME.Unix()
+	if parsedDtMax.Before(MAX_TIME) {
+		ub = parsedDtMax.Unix()
+	}
+
+	var res []time.Time
+	for i := 0; i < n; i++ {
+		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
+		res = append(res, dt)
+	}
+	s.Data = res
+}
+
+func (s *RandomTimeField) GetValues() []string {
+	var res []string
+	for _, dt := range s.Data {
+		res = append(res, dt.Format(time.TimeOnly))
+	}
+	return res
+}
+
+func (s *RandomTimeField) GetValue(i int) string {
+	return s.Data[i].Format(time.TimeOnly)
+}
+
+func (s *RandomTimeField) GetSource() string {
+	return s.Source
+}
+
+type DerivedSource struct {
+	Source string `json:"source"`
+	Config struct {
+		Expression string `json:"expression"`
+		Fields     []string
+	} `json:"config"`
+}
+
+type DerivedField struct {
+	Field    string `json:"field"`
+	DataType string `json:"data_type"`
+	DerivedSource
+	Data []string
+}
+
+func (s *DerivedField) Generate(n int, ctx context.Context) {
+	fieldPtrs := make(map[string]reflect.Value)
+	schema := ctx.Value("schema")
+	fieldMap := ctx.Value("fieldMap")
+	for _, f := range s.Config.Fields {
+		idx := reflect.ValueOf(fieldMap).MapIndex(reflect.ValueOf(f)).Int()
+		fieldPtrs[f] = reflect.ValueOf(schema).Index(int(idx))
+	}
+
+	for i := 0; i < n; i++ {
+		env := make(map[string]interface{})
+		for k, v := range fieldPtrs {
+			field := v.Elem().Interface().(Field)
+			fieldType := reflect.ValueOf(field).Elem().FieldByName("DataType")
+			log.Fatal("todo", fieldType)
+			env[k] = field.GetValue(i)
+		}
+		program, err := expr.Compile(s.Config.Expression, expr.Env(env))
+		if err != nil {
+			log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Field, err)
+		}
+		o, err := expr.Run(program, env)
+		s.Data = append(s.Data, o.(string))
+	}
+}
+
+func (s *DerivedField) GetValues() []string {
+	return s.Data
+}
+
+func (s *DerivedField) GetValue(i int) string {
+	return s.Data[i]
+}
+
+func (s *DerivedField) GetSource() string {
+	return s.Source
 }
