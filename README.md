@@ -32,3 +32,8 @@
     - n lines
     - schema
   - dct gen-sources
+
+## DSL For Derived Fields
+- Strings: +
+- Floats: +, *, /, ^, -
+- Ints: +, *, /, ^, -, %

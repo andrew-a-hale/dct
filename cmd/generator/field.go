@@ -15,8 +15,6 @@ import (
 	"slices"
 	"strconv"
 	"time"
-
-	"github.com/expr-lang/expr"
 )
 
 func ParseField[T any](raw []byte) *T {
@@ -595,58 +593,5 @@ func (s *RandomTimeField) GetValue(i int) string {
 }
 
 func (s *RandomTimeField) GetSource() string {
-	return s.Source
-}
-
-type DerivedSource struct {
-	Source string `json:"source"`
-	Config struct {
-		Expression string `json:"expression"`
-		Fields     []string
-	} `json:"config"`
-}
-
-type DerivedField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	DerivedSource
-	Data []string
-}
-
-func (s *DerivedField) Generate(n int, ctx context.Context) {
-	fieldPtrs := make(map[string]reflect.Value)
-	schema := ctx.Value("schema")
-	fieldMap := ctx.Value("fieldMap")
-	for _, f := range s.Config.Fields {
-		idx := reflect.ValueOf(fieldMap).MapIndex(reflect.ValueOf(f)).Int()
-		fieldPtrs[f] = reflect.ValueOf(schema).Index(int(idx))
-	}
-
-	for i := 0; i < n; i++ {
-		env := make(map[string]interface{})
-		for k, v := range fieldPtrs {
-			field := v.Elem().Interface().(Field)
-			fieldType := reflect.ValueOf(field).Elem().FieldByName("DataType")
-			log.Fatal("todo", fieldType)
-			env[k] = field.GetValue(i)
-		}
-		program, err := expr.Compile(s.Config.Expression, expr.Env(env))
-		if err != nil {
-			log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Field, err)
-		}
-		o, err := expr.Run(program, env)
-		s.Data = append(s.Data, o.(string))
-	}
-}
-
-func (s *DerivedField) GetValues() []string {
-	return s.Data
-}
-
-func (s *DerivedField) GetValue(i int) string {
-	return s.Data[i]
-}
-
-func (s *DerivedField) GetSource() string {
 	return s.Source
 }

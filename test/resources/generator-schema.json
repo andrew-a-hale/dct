@@ -1,7 +1,6 @@
 [
   {
-    "field": "id",
-    "data_type": "string",
+    "field": "first_name",
     "source": "randomAscii",
     "config": {
       "length": 10
@@ -9,7 +8,6 @@
   },
   {
     "field": "age",
-    "data_type": "int",
     "source": "randomUniformInt",
     "config": {
       "min": 0,
@@ -18,92 +16,91 @@
   },
   {
     "field": "height",
-    "data_type": "float",
     "source": "randomNormal",
     "config": {
       "mean": 175,
       "std": 10,
+      "digits": 5,
       "decimals": 2
     }
   },
   {
     "field": "weight",
-    "data_type": "float",
     "source": "randomNormal",
     "config": {
-      "mean": 75,
+      "mean": 70,
       "std": 10,
+      "digits": 5,
       "decimals": 2
     }
   },
   {
     "field": "siblings",
-    "data_type": "int",
     "source": "randomPoisson",
     "config": {
       "lambda": 2
     }
   },
   {
+    "field": "last_name",
+    "source": "lastNames"
+  },
+  {
+    "field": "full_name",
+    "data_type": "string",
+    "source": "derived",
+    "config": {
+      "fields": [
+        "first_name",
+        "last_name"
+      ],
+      "expression": "first_name + last_name"
+    }
+  },
+  {
     "field": "bmi",
-    "data_type": "int",
     "source": "derived",
     "config": {
       "fields": [
         "weight",
         "height"
       ],
-      "expression": "weight / (height ** 2)"
+      "expression": "weight / (height ^ 2)"
     }
   },
   {
-    "field": "first_name",
-    "data_type": "string",
-    "source": "firstNames"
-  },
-  {
-    "field": "last_name",
-    "data_type": "string",
-    "source": "lastNames"
-  },
-  {
-    "field": "full_name",
+    "field": "rainbow",
     "source": "derived",
-    "data_type": "string",
     "config": {
       "fields": [
-        "first_name",
-        "last_name"
+        "weight",
+        "height"
       ],
-      "expression": "first_name + ' ' + last_name"
-    }
-  },
-  {
-    "field": "date_of_birth",
-    "data_type": "string",
-    "source": "randomDate",
-    "config": {
-      "min": "1970-01-01",
-      "max": "1999-12-31"
+      "expression": "weight + height ^ 2 - weight / height * (weight % 200) ** 5"
     }
   },
   {
     "field": "last_notification_at",
-    "data_type": "string",
     "source": "randomDatetime",
     "config": {
       "tz": "UTC",
-      "min": "1990-01-01 00:00:00",
-      "max": "1999-12-31 23:59:59"
+      "max": "2025-01-01 00:00:00"
     }
   },
   {
-    "field": "last_slept_at",
-    "data_type": "string",
+    "field": "date_of_birth",
+    "source": "randomDate",
+    "config": {
+      "min": "2000-01-01",
+      "max": "2023-01-01"
+    }
+  },
+  {
+    "field": "wake_up",
     "source": "randomTime",
     "config": {
-      "min": "09:00:00",
-      "max": "23:59:00"
+      "min": "02:00:00",
+      "max": "10:00:00"
     }
   }
 ]
