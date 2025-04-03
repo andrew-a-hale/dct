@@ -16,4 +16,4 @@ chart:
 
 gen:
 	./init.sh
-	go run main.go gen -n 10 -s test/resources/generator-schema.json ;
+	go run main.go gen -n 10000 -s test/resources/generator-schema.json ;

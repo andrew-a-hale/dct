@@ -82,10 +82,10 @@ func (s *Scene) Draw() error {
 	var char []byte
 	var out string
 
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := range s.Height {
+		for j := range s.Width {
 			char, _ = s.Graphic.getPixel(i, j)
-			out += fmt.Sprintf("%s", char)
+			out += string(char)
 		}
 	}
 

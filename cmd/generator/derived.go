@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math"
@@ -26,7 +25,7 @@ type DerivedField struct {
 	Data []string
 }
 
-var env = map[string]interface{}{
+var env = map[string]any{
 	"power": func(a string, b int) string {
 		x, _ := strconv.ParseFloat(a, 64)
 		return fmt.Sprintf("%v", math.Pow(x, float64(b)))
@@ -57,16 +56,14 @@ var env = map[string]interface{}{
 	},
 }
 
-func (s *DerivedField) Generate(n int, ctx context.Context) {
+func (s *DerivedField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	fieldPtrs := make(map[string]reflect.Value)
-	schema := ctx.Value("schema")
-	fieldMap := ctx.Value("fieldMap")
 	for _, f := range s.Config.Fields {
-		idx := reflect.ValueOf(fieldMap).MapIndex(reflect.ValueOf(f)).Int()
-		fieldPtrs[f] = reflect.ValueOf(schema).Index(int(idx))
+		idx := reflect.ValueOf(*fieldMap).MapIndex(reflect.ValueOf(f)).Int()
+		fieldPtrs[f] = reflect.ValueOf(*schema).Index(int(idx))
 	}
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for k, v := range fieldPtrs {
 			field := v.Elem().Interface().(Field)
 			env[k] = field.GetValue(i)
@@ -86,7 +83,7 @@ func (s *DerivedField) Generate(n int, ctx context.Context) {
 		if err != nil {
 			log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Field, err)
 		}
-		o, err := expr.Run(program, env)
+		o, _ := expr.Run(program, env)
 		s.Data = append(s.Data, fmt.Sprintf("%v", o))
 	}
 }

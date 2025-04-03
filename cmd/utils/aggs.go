@@ -2,6 +2,7 @@ package utils
 
 import (
 	"log"
+	"slices"
 	"strings"
 )
 
@@ -18,10 +19,8 @@ const (
 var SUPPORTED_AGGS = []string{MEAN, MEDIAN, MIN, MAX, SUM, COUNT, COUNT_DISTINCT}
 
 func CheckAgg(agg string) {
-	for _, supportedAggs := range SUPPORTED_AGGS {
-		if strings.ToLower(agg) == supportedAggs {
-			return
-		}
+	if slices.Contains(SUPPORTED_AGGS, strings.ToLower(agg)) {
+		return
 	}
 
 	log.Fatalf("agg '%s' not found, expect one of '%v'", agg, SUPPORTED_AGGS)

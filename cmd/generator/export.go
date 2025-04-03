@@ -1,23 +1,20 @@
 package generator
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
-type Export struct {
-	Dest io.Writer
-	Rows []any
-	N    int
-}
-
-func buildExport(schema []Field, out io.Writer) Export {
-	var rows []any
-
-	for i := 0; i < lines; i++ {
-		var row []any
-		for _, f := range schema {
-			row = append(row, f.GetValue(i))
+func Export(schema []Field, out io.Writer) {
+	fields := len(schema)
+	for i := range lines {
+		for j, f := range schema {
+			fmt.Fprintf(out, "%v", f.GetValue(i))
+			if j < fields-1 {
+				fmt.Fprintf(out, ", ")
+			} else {
+				fmt.Fprintf(out, "\n")
+			}
 		}
-		rows = append(rows, row)
 	}
-
-	return Export{out, rows, lines}
 }

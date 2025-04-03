@@ -189,7 +189,7 @@ func makeTitle(filename string, width int) string {
 
 	var title string
 	var length int
-	for i := 0; i < len(formats); i++ {
+	for i := range len(formats) {
 		title = fmt.Sprintf(formats[i], filename)
 		length = strings.Count(title, "") - 1
 		if length <= width {

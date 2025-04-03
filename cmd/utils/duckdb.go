@@ -62,12 +62,12 @@ func Query(query string) (Result, error) {
 	}
 
 	var out [][]string
-	vals := make([]interface{}, len(cols))
+	vals := make([]any, len(cols))
 
 	row := 0
 	for rows.Next() {
 		for i := range cols {
-			vals[i] = new(interface{})
+			vals[i] = new(any)
 		}
 
 		err = rows.Scan(vals...)
@@ -77,7 +77,7 @@ func Query(query string) (Result, error) {
 
 		var tmp []string
 		for _, v := range vals {
-			if s, ok := v.(*interface{}); ok {
+			if s, ok := v.(*any); ok {
 				if *s == nil {
 					tmp = append(tmp, string("NULL"))
 				} else if x, ok := (*s).(string); ok {

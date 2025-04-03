@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"context"
 	"dct/cmd/utils"
 	"encoding/json"
 	"fmt"
@@ -45,7 +44,7 @@ func parseSchema(rawSchema string) []Field {
 		}
 	}
 
-	var fields []interface{}
+	var fields []any
 	err := json.Unmarshal(schema, &fields)
 	if err != nil {
 		log.Fatalf("failed to parse schema: %v\n", err)
@@ -89,7 +88,7 @@ func parseSchema(rawSchema string) []Field {
 }
 
 type Field interface {
-	Generate(int, context.Context)
+	Generate(int, *[]Field, *map[string]int)
 	GetSource() string
 	GetValues() []string
 	GetValue(int) string
@@ -110,11 +109,11 @@ type RandomAsciiField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s *RandomAsciiField) Generate(n int, ctx context.Context) {
+func (s *RandomAsciiField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	var res []string
-	for i := 0; i < n; i++ {
+	for range n {
 		var sb string
-		for i := 0; i < s.Config.Length; i++ {
+		for range s.Config.Length {
 			sb += string(uint8(rand.IntN(93) + 33))
 		}
 		res = append(res, sb)
@@ -150,10 +149,10 @@ type RandomUniformIntField struct {
 	RandomUniformIntSource
 }
 
-func (s *RandomUniformIntField) Generate(n int, ctx context.Context) {
+func (s *RandomUniformIntField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	var res []int
 	var x int
-	for i := 0; i < n; i++ {
+	for range n {
 		x = rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min
 		res = append(res, x)
 	}
@@ -192,10 +191,10 @@ type RandomNormalField struct {
 	RandomNormalSource
 }
 
-func (s *RandomNormalField) Generate(n int, ctx context.Context) {
+func (s *RandomNormalField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	var res []float64
 	var x float64
-	for i := 0; i < n; i++ {
+	for range n {
 		x = rand.NormFloat64()*s.Config.Std + s.Config.Mean
 		res = append(res, x)
 	}
@@ -237,10 +236,10 @@ type RandomPoissonField struct {
 	RandomPoissonSource
 }
 
-func (s *RandomPoissonField) Generate(n int, ctx context.Context) {
+func (s *RandomPoissonField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	var res []int
 	var x int
-	for i := 0; i < n; i++ {
+	for range n {
 		x = generatePoisson(s.Config.Lambda)
 		res = append(res, x)
 	}
@@ -288,7 +287,7 @@ type LastNameField struct {
 	Data []string
 }
 
-func (s *LastNameField) Generate(n int, ctx context.Context) {
+func (s *LastNameField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	query := fmt.Sprintf(`
 select name
 from last_names
@@ -328,7 +327,7 @@ type FirstNameField struct {
 	Data []string
 }
 
-func (s *FirstNameField) Generate(n int, ctx context.Context) {
+func (s *FirstNameField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	query := fmt.Sprintf(`
 select name
 from first_names
@@ -373,7 +372,7 @@ type RandomDatetimeField struct {
 	Data     []time.Time
 }
 
-func (s *RandomDatetimeField) Generate(n int, ctx context.Context) {
+func (s *RandomDatetimeField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -415,7 +414,7 @@ func (s *RandomDatetimeField) Generate(n int, ctx context.Context) {
 	}
 
 	var res []time.Time
-	for i := 0; i < n; i++ {
+	for range n {
 		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc)
 		res = append(res, dt)
 	}
@@ -453,7 +452,7 @@ type RandomDateField struct {
 	Data     []time.Time
 }
 
-func (s *RandomDateField) Generate(n int, ctx context.Context) {
+func (s *RandomDateField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -491,7 +490,7 @@ func (s *RandomDateField) Generate(n int, ctx context.Context) {
 	}
 
 	var res []time.Time
-	for i := 0; i < n; i++ {
+	for range n {
 		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0)
 		res = append(res, dt)
 	}
@@ -529,7 +528,7 @@ type RandomTimeField struct {
 	Data     []time.Time
 }
 
-func (s *RandomTimeField) Generate(n int, ctx context.Context) {
+func (s *RandomTimeField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
 	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
 
@@ -573,7 +572,7 @@ func (s *RandomTimeField) Generate(n int, ctx context.Context) {
 	}
 
 	var res []time.Time
-	for i := 0; i < n; i++ {
+	for range n {
 		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
 		res = append(res, dt)
 	}

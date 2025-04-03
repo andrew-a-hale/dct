@@ -124,7 +124,7 @@ func parseMetrics(metricString string) metricSpec {
 
 func generateKeySql(spec keySpec) (left, right string) {
 	for i, key := range spec.keys {
-		left += fmt.Sprintf("%s", key.left)
+		left += key.left
 		right += fmt.Sprintf("%s as %s", key.right, key.left)
 		if i < len(spec.keys)-1 {
 			left += ", "
