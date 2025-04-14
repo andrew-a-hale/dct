@@ -1,0 +1,46 @@
+[
+  {
+    "data_type": "string",
+    "field": "first_name",
+    "source": "firstNames"
+  },
+  {
+    "data_type": "string",
+    "field": "last_name",
+    "source": "lastNames"
+  },
+  {
+    "data_type": "string",
+    "field": "company",
+    "source": "randomAscii",
+    "config": {
+      "length": 20
+    }
+  },
+  {
+    "data_type": "string",
+    "field": "email",
+    "source": "randomAscii",
+    "config": {
+      "length": 30
+    }
+  },
+  {
+    "data_type": "int",
+    "field": "phone_number",
+    "source": "randomUniformInt",
+    "config": {
+      "min": 10000000,
+      "max": 99999999
+    }
+  },
+  {
+    "data_type": "int",
+    "field": "id",
+    "source": "randomUniformInt",
+    "config": {
+      "min": 1000,
+      "max": 9999999999999
+    }
+  }
+]

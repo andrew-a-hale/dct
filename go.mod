@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/expr-lang/expr v1.16.9
+	github.com/google/uuid v1.6.0
 	github.com/marcboeker/go-duckdb v1.8.1
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/term v0.25.0

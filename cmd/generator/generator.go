@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	seed      int64
+	seed      int
 	rawSchema string
 	lines     int
 	outfile   string
@@ -19,12 +19,11 @@ var (
 func init() {
 	GenCmd.Flags().StringVarP(&rawSchema, "schema", "s", "", "schema to generate")
 	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "output file")
-	GenCmd.Flags().Int64VarP(&seed, "seed", "S", 0, "fixed seed")
 	GenCmd.Flags().IntVarP(&lines, "lines", "n", 0, "lines to generate")
 }
 
 var GenCmd = &cobra.Command{
-	Use:   "gen -S -s [schema] -n [lines] -o [outfile]",
+	Use:   "gen -S [seed] -s [schema] -n [lines] -o [outfile]",
 	Short: "generate dummy data",
 	Long:  `generate dummy data`,
 	Args:  nil,
@@ -32,7 +31,7 @@ var GenCmd = &cobra.Command{
 		var out io.Writer
 		var err error
 		if outfile != "" {
-			out, err = os.Open(outfile)
+			out, err = os.Create(outfile)
 			if err != nil {
 				log.Fatalf("failed to create out file: %v\n", err)
 			}
@@ -42,20 +41,12 @@ var GenCmd = &cobra.Command{
 
 		fieldMap := make(map[string]int)
 		schema := parseSchema(rawSchema)
-		for i, f := range schema {
-			if f.GetSource() == "derived" {
-				continue
+		for range lines {
+			for i, f := range schema {
+				fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
+				f.Generate(&schema, &fieldMap)
 			}
-			fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
-			f.Generate(lines, &schema, &fieldMap)
+			Export(schema, out)
 		}
-
-		for _, f := range schema {
-			if f.GetSource() == "derived" {
-				f.Generate(lines, &schema, &fieldMap)
-			}
-		}
-
-		Export(schema, out)
 	},
 }

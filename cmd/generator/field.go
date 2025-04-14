@@ -1,7 +1,9 @@
+// add random enum from set
+// add random email
 package generator
 
 import (
-	"dct/cmd/utils"
+	"dct/cmd/generator/sources"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,9 +13,19 @@ import (
 	"math/rand/v2"
 	"os"
 	"reflect"
-	"slices"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+)
+
+type DataType = string
+
+const (
+	STRING = "string"
+	INT    = "int"
+	FLOAT  = "float"
+	BOOL   = "bool"
 )
 
 func ParseField[T any](raw []byte) *T {
@@ -79,6 +91,8 @@ func parseSchema(rawSchema string) []Field {
 			parsedFields = append(parsedFields, ParseField[RandomTimeField](j))
 		case "randomDate":
 			parsedFields = append(parsedFields, ParseField[RandomDateField](j))
+		case "uuid":
+			parsedFields = append(parsedFields, ParseField[UuidField](j))
 		case "derived":
 			parsedFields = append(parsedFields, ParseField[DerivedField](j))
 		}
@@ -88,96 +102,74 @@ func parseSchema(rawSchema string) []Field {
 }
 
 type Field interface {
-	Generate(int, *[]Field, *map[string]int)
-	GetSource() string
-	GetValues() []string
-	GetValue(int) string
+	Generate(*[]Field, *map[string]int)
+	GetValue() string
+	GetType() string
 }
 
 type RandomAsciiSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Length int `json:"length"`
 	} `json:"config"`
 }
 
 type RandomAsciiField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []string
+	Field string `json:"field"`
+	Data  string
 	RandomAsciiSource
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s *RandomAsciiField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	var res []string
-	for range n {
-		var sb string
-		for range s.Config.Length {
-			sb += string(uint8(rand.IntN(93) + 33))
-		}
-		res = append(res, sb)
+func (s *RandomAsciiField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	var sb string
+	for range s.Config.Length {
+		sb += string(uint8(rand.IntN(93) + 33))
 	}
 
-	s.Data = res
+	s.Data = sb
 }
 
-func (s *RandomAsciiField) GetValues() []string {
+func (s *RandomAsciiField) GetValue() string {
 	return s.Data
 }
 
-func (s *RandomAsciiField) GetValue(i int) string {
-	return s.Data[i]
-}
-
-func (s *RandomAsciiField) GetSource() string {
-	return s.Source
+func (s *RandomAsciiField) GetType() string {
+	return s.DataType
 }
 
 type RandomUniformIntSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Min int `json:"min"`
 		Max int `json:"max"`
 	} `json:"config"`
 }
 
 type RandomUniformIntField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []int
+	Field string `json:"field"`
+	Data  int
 	RandomUniformIntSource
 }
 
-func (s *RandomUniformIntField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	var res []int
-	var x int
-	for range n {
-		x = rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min
-		res = append(res, x)
-	}
-	s.Data = res
+func (s *RandomUniformIntField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	s.Data = rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min
 }
 
-func (s *RandomUniformIntField) GetValues() []string {
-	var res []string
-	for _, v := range s.Data {
-		res = append(res, fmt.Sprintf("%d", v))
-	}
-	return res
+func (s *RandomUniformIntField) GetValue() string {
+	return strconv.Itoa(s.Data)
 }
 
-func (s *RandomUniformIntField) GetValue(i int) string {
-	return strconv.Itoa(s.Data[i])
-}
-
-func (s *RandomUniformIntField) GetSource() string {
-	return s.Source
+func (s *RandomUniformIntField) GetType() string {
+	return s.DataType
 }
 
 type RandomNormalSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Mean     float64 `json:"mean"`
 		Std      float64 `json:"std"`
 		Decimals int     `json:"decimals"`
@@ -185,66 +177,43 @@ type RandomNormalSource struct {
 }
 
 type RandomNormalField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []float64
+	Field string `json:"field"`
+	Data  float64
 	RandomNormalSource
 }
 
-func (s *RandomNormalField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	var res []float64
-	var x float64
-	for range n {
-		x = rand.NormFloat64()*s.Config.Std + s.Config.Mean
-		res = append(res, x)
-	}
-
-	s.Data = res
+func (s *RandomNormalField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	s.Data = rand.NormFloat64()*s.Config.Std + s.Config.Mean
 }
 
 func formatFloat(x float64, places int) string {
 	return fmt.Sprintf(fmt.Sprintf("%%0.%df", places), x)
 }
 
-func (s *RandomNormalField) GetValues() []string {
-	var res []string
-	for _, v := range s.Data {
-		res = append(res, formatFloat(v, s.Config.Decimals))
-	}
-	return res
+func (s *RandomNormalField) GetValue() string {
+	return formatFloat(s.Data, s.Config.Decimals)
 }
 
-func (s *RandomNormalField) GetValue(i int) string {
-	return formatFloat(s.Data[i], s.Config.Decimals)
-}
-
-func (s *RandomNormalField) GetSource() string {
-	return s.Source
+func (s *RandomNormalField) GetType() string {
+	return s.DataType
 }
 
 type RandomPoissonSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Lambda int `json:"lambda"`
 	} `json:"config"`
 }
 
 type RandomPoissonField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []int
+	Field string `json:"field"`
+	Data  int
 	RandomPoissonSource
 }
 
-func (s *RandomPoissonField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	var res []int
-	var x int
-	for range n {
-		x = generatePoisson(s.Config.Lambda)
-		res = append(res, x)
-	}
-
-	s.Data = res
+func (s *RandomPoissonField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	s.Data = generatePoisson(s.Config.Lambda)
 }
 
 func generatePoisson(lambda int) int {
@@ -260,105 +229,79 @@ func generatePoisson(lambda int) int {
 	return n
 }
 
-func (s *RandomPoissonField) GetValues() []string {
-	var res []string
-	for _, v := range s.Data {
-		res = append(res, strconv.Itoa(v))
-	}
-	return res
+func (s *RandomPoissonField) GetValue() string {
+	return strconv.Itoa(s.Data)
 }
 
-func (s *RandomPoissonField) GetValue(i int) string {
-	return strconv.Itoa(s.Data[i])
-}
-
-func (s *RandomPoissonField) GetSource() string {
-	return s.Source
+func (s *RandomPoissonField) GetType() string {
+	return s.DataType
 }
 
 type LastNameSource struct {
-	Source string `json:"source"`
+	Source     string `json:"source"`
+	DataType   string `json:"data_type"`
+	SourceData []string
 }
 
 type LastNameField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
+	Field string `json:"field"`
 	LastNameSource
-	Data []string
+	Data string
 }
 
-func (s *LastNameField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	query := fmt.Sprintf(`
-select name
-from last_names
-cross join generate_series(1, %d)
-using sample reservoir(%d rows)`,
-		max(n/100, 2),
-		n,
-	)
-	result, err := utils.Query(query)
-	if err != nil {
-		log.Fatalf("failed to sample first_names from duckdb: %v\n", err)
+func (s *LastNameField) Init() {
+	s.SourceData = sources.LastNames
+}
+
+func (s *LastNameField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	if len(s.SourceData) == 0 {
+		s.Init()
 	}
-
-	s.Data = slices.Concat(result.Rows...)
+	s.Data = s.SourceData[rand.IntN(len(s.SourceData))]
 }
 
-func (s *LastNameField) GetValues() []string {
+func (s *LastNameField) GetValue() string {
 	return s.Data
 }
 
-func (s *LastNameField) GetValue(i int) string {
-	return s.Data[i]
-}
-
-func (s *LastNameField) GetSource() string {
-	return s.Source
+func (s *LastNameField) GetType() string {
+	return s.DataType
 }
 
 type FirstNameSource struct {
-	Source string `json:"source"`
+	Source     string `json:"source"`
+	SourceData []string
+	DataType   string `json:"data_type"`
 }
 
 type FirstNameField struct {
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
+	Field string `json:"field"`
 	FirstNameSource
-	Data []string
+	Data string
 }
 
-func (s *FirstNameField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
-	query := fmt.Sprintf(`
-select name
-from first_names
-cross join generate_series(1, %d)
-using sample reservoir(%d rows)`,
-		max(n/100, 2),
-		n,
-	)
-	result, err := utils.Query(query)
-	if err != nil {
-		log.Fatalf("failed to sample first_names from duckdb: %v\n", err)
+func (s *FirstNameField) Init() {
+	for _, t := range sources.FirstNames {
+		s.SourceData = append(s.SourceData, t.Name)
 	}
-
-	s.Data = slices.Concat(result.Rows...)
 }
 
-func (s *FirstNameField) GetValues() []string {
+func (s *FirstNameField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	s.Data = s.SourceData[rand.IntN(len(s.SourceData))]
+}
+
+func (s *FirstNameField) GetValue() string {
 	return s.Data
 }
 
-func (s *FirstNameField) GetValue(i int) string {
-	return s.Data[i]
-}
-
-func (s *FirstNameField) GetSource() string {
-	return s.Source
+func (s *FirstNameField) GetType() string {
+	return s.DataType
 }
 
 type RandomDatetimeSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Tz  string `json:"tz"`
 		Min string `json:"min"`
 		Max string `json:"max"`
@@ -367,12 +310,11 @@ type RandomDatetimeSource struct {
 
 type RandomDatetimeField struct {
 	RandomDatetimeSource
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []time.Time
+	Field string `json:"field"`
+	Data  time.Time
 }
 
-func (s *RandomDatetimeField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
+func (s *RandomDatetimeField) Generate(schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -413,33 +355,21 @@ func (s *RandomDatetimeField) Generate(n int, schema *[]Field, fieldMap *map[str
 		ub = parsedDtMax.Unix()
 	}
 
-	var res []time.Time
-	for range n {
-		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc)
-		res = append(res, dt)
-	}
-	s.Data = res
+	s.Data = time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc)
 }
 
-func (s *RandomDatetimeField) GetValues() []string {
-	var res []string
-	for _, dt := range s.Data {
-		res = append(res, dt.Format(time.RFC3339))
-	}
-	return res
+func (s *RandomDatetimeField) GetValue() string {
+	return s.Data.Format(time.RFC3339)
 }
 
-func (s *RandomDatetimeField) GetValue(i int) string {
-	return s.Data[i].Format(time.RFC3339)
-}
-
-func (s *RandomDatetimeField) GetSource() string {
-	return s.Source
+func (s *RandomDatetimeField) GetType() string {
+	return s.DataType
 }
 
 type RandomDateSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
 	} `json:"config"`
@@ -447,12 +377,11 @@ type RandomDateSource struct {
 
 type RandomDateField struct {
 	RandomDateSource
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []time.Time
+	Field string `json:"field"`
+	Data  time.Time
 }
 
-func (s *RandomDateField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
+func (s *RandomDateField) Generate(schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -489,33 +418,21 @@ func (s *RandomDateField) Generate(n int, schema *[]Field, fieldMap *map[string]
 		ub = parsedDtMax.Unix()
 	}
 
-	var res []time.Time
-	for range n {
-		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0)
-		res = append(res, dt)
-	}
-	s.Data = res
+	s.Data = time.Unix(rand.Int64N(ub-lb)+lb, 0)
 }
 
-func (s *RandomDateField) GetValues() []string {
-	var res []string
-	for _, dt := range s.Data {
-		res = append(res, dt.Format(time.DateOnly))
-	}
-	return res
+func (s *RandomDateField) GetValue() string {
+	return s.Data.Format(time.DateOnly)
 }
 
-func (s *RandomDateField) GetValue(i int) string {
-	return s.Data[i].Format(time.DateOnly)
-}
-
-func (s *RandomDateField) GetSource() string {
-	return s.Source
+func (s *RandomDateField) GetType() string {
+	return s.DataType
 }
 
 type RandomTimeSource struct {
-	Source string `json:"source"`
-	Config struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
 	} `json:"config"`
@@ -523,12 +440,11 @@ type RandomTimeSource struct {
 
 type RandomTimeField struct {
 	RandomDateSource
-	Field    string `json:"field"`
-	DataType string `json:"data_type"`
-	Data     []time.Time
+	Field string `json:"field"`
+	Data  time.Time
 }
 
-func (s *RandomTimeField) Generate(n int, schema *[]Field, fieldMap *map[string]int) {
+func (s *RandomTimeField) Generate(schema *[]Field, fieldMap *map[string]int) {
 	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
 	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
 
@@ -571,26 +487,36 @@ func (s *RandomTimeField) Generate(n int, schema *[]Field, fieldMap *map[string]
 		ub = parsedDtMax.Unix()
 	}
 
-	var res []time.Time
-	for range n {
-		dt := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
-		res = append(res, dt)
-	}
-	s.Data = res
+	s.Data = time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC)
 }
 
-func (s *RandomTimeField) GetValues() []string {
-	var res []string
-	for _, dt := range s.Data {
-		res = append(res, dt.Format(time.TimeOnly))
-	}
-	return res
+func (s *RandomTimeField) GetValue() string {
+	return s.Data.Format(time.TimeOnly)
 }
 
-func (s *RandomTimeField) GetValue(i int) string {
-	return s.Data[i].Format(time.TimeOnly)
+func (s *RandomTimeField) GetType() string {
+	return s.DataType
 }
 
-func (s *RandomTimeField) GetSource() string {
-	return s.Source
+type UuidSource struct {
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+}
+
+type UuidField struct {
+	Field string `json:"field"`
+	Data  string
+	RandomAsciiSource
+}
+
+func (s *UuidField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	s.Data = uuid.NewString()
+}
+
+func (s *UuidField) GetValue() string {
+	return s.Data
+}
+
+func (s *UuidField) GetType() string {
+	return s.DataType
 }
