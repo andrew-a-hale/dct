@@ -20,10 +20,13 @@ func init() {
 	GenCmd.Flags().StringVarP(&rawSchema, "schema", "s", "", "schema to generate")
 	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "output file")
 	GenCmd.Flags().IntVarP(&lines, "lines", "n", 0, "lines to generate")
+
+	GenCmd.MarkFlagRequired("schema")
+	GenCmd.MarkFlagRequired("lines")
 }
 
 var GenCmd = &cobra.Command{
-	Use:   "gen -S [seed] -s [schema] -n [lines] -o [outfile]",
+	Use:   "gen -s [schema] -n [lines] -o [outfile]",
 	Short: "generate dummy data",
 	Long:  `generate dummy data`,
 	Args:  nil,
@@ -41,12 +44,12 @@ var GenCmd = &cobra.Command{
 
 		fieldMap := make(map[string]int)
 		schema := parseSchema(rawSchema)
-		for range lines {
+		for i := range lines {
 			for i, f := range schema {
 				fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
 				f.Generate(&schema, &fieldMap)
 			}
-			Export(schema, out)
+			Export(schema, out, i)
 		}
 	},
 }

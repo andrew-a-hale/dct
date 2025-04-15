@@ -97,3 +97,7 @@ func (s *DerivedField) GetValue() string {
 func (s *DerivedField) GetType() string {
 	return s.DataType
 }
+
+func (s *DerivedField) GetName() string {
+	return s.Field
+}

@@ -105,6 +105,7 @@ type Field interface {
 	Generate(*[]Field, *map[string]int)
 	GetValue() string
 	GetType() string
+	GetName() string
 }
 
 type RandomAsciiSource struct {
@@ -139,6 +140,10 @@ func (s *RandomAsciiField) GetType() string {
 	return s.DataType
 }
 
+func (s *RandomAsciiField) GetName() string {
+	return s.Field
+}
+
 type RandomUniformIntSource struct {
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
@@ -164,6 +169,10 @@ func (s *RandomUniformIntField) GetValue() string {
 
 func (s *RandomUniformIntField) GetType() string {
 	return s.DataType
+}
+
+func (s *RandomUniformIntField) GetName() string {
+	return s.Field
 }
 
 type RandomNormalSource struct {
@@ -196,6 +205,10 @@ func (s *RandomNormalField) GetValue() string {
 
 func (s *RandomNormalField) GetType() string {
 	return s.DataType
+}
+
+func (s *RandomNormalField) GetName() string {
+	return s.Field
 }
 
 type RandomPoissonSource struct {
@@ -237,6 +250,10 @@ func (s *RandomPoissonField) GetType() string {
 	return s.DataType
 }
 
+func (s *RandomPoissonField) GetName() string {
+	return s.Field
+}
+
 type LastNameSource struct {
 	Source     string `json:"source"`
 	DataType   string `json:"data_type"`
@@ -268,6 +285,10 @@ func (s *LastNameField) GetType() string {
 	return s.DataType
 }
 
+func (s *LastNameField) GetName() string {
+	return s.Field
+}
+
 type FirstNameSource struct {
 	Source     string `json:"source"`
 	SourceData []string
@@ -287,6 +308,9 @@ func (s *FirstNameField) Init() {
 }
 
 func (s *FirstNameField) Generate(schema *[]Field, fieldMap *map[string]int) {
+	if len(s.SourceData) == 0 {
+		s.Init()
+	}
 	s.Data = s.SourceData[rand.IntN(len(s.SourceData))]
 }
 
@@ -296,6 +320,10 @@ func (s *FirstNameField) GetValue() string {
 
 func (s *FirstNameField) GetType() string {
 	return s.DataType
+}
+
+func (s *FirstNameField) GetName() string {
+	return s.Field
 }
 
 type RandomDatetimeSource struct {
@@ -366,6 +394,10 @@ func (s *RandomDatetimeField) GetType() string {
 	return s.DataType
 }
 
+func (s *RandomDatetimeField) GetName() string {
+	return s.Field
+}
+
 type RandomDateSource struct {
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
@@ -427,6 +459,10 @@ func (s *RandomDateField) GetValue() string {
 
 func (s *RandomDateField) GetType() string {
 	return s.DataType
+}
+
+func (s *RandomDateField) GetName() string {
+	return s.Field
 }
 
 type RandomTimeSource struct {
@@ -498,6 +534,10 @@ func (s *RandomTimeField) GetType() string {
 	return s.DataType
 }
 
+func (s *RandomTimeField) GetName() string {
+	return s.Field
+}
+
 type UuidSource struct {
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
@@ -519,4 +559,8 @@ func (s *UuidField) GetValue() string {
 
 func (s *UuidField) GetType() string {
 	return s.DataType
+}
+
+func (s *UuidField) GetName() string {
+	return s.Field
 }

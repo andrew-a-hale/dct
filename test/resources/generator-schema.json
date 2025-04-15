@@ -6,7 +6,7 @@
   },
   {
     "data_type": "string",
-    "field": "first_name",
+    "field": "nonce",
     "source": "randomAscii",
     "config": {
       "length": 10
@@ -50,6 +50,11 @@
     "config": {
       "lambda": 2
     }
+  },
+  {
+    "data_type": "string",
+    "field": "first_name",
+    "source": "firstNames"
   },
   {
     "data_type": "string",
