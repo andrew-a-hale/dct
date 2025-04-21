@@ -1,12 +1,14 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 )
 
-func Export(schema []Field, out io.Writer, line int) {
+func Export(ctx context.Context, out io.Writer, line int) {
+	schema := ctx.Value("schema").(Schema)
 	fields := len(schema)
 
 	// headers
@@ -30,7 +32,7 @@ func Export(schema []Field, out io.Writer, line int) {
 	}
 
 	for i, f := range schema {
-		value := f.GetValue()
+		value := f.Generate(ctx)
 		if strings.Contains(value, `"`) {
 			value = strings.ReplaceAll(value, `"`, `""`)
 		}

@@ -3,6 +3,7 @@
 package generator
 
 import (
+	"context"
 	"dct/cmd/generator/sources"
 	"encoding/json"
 	"fmt"
@@ -41,7 +42,7 @@ func ParseField[T any](raw []byte) *T {
 	return parsedField
 }
 
-func parseSchema(rawSchema string) []Field {
+func parseSchema(rawSchema string) Schema {
 	var schema []byte
 	if fs.ValidPath(rawSchema) {
 		f, err := os.Open(rawSchema)
@@ -101,9 +102,12 @@ func parseSchema(rawSchema string) []Field {
 	return parsedFields
 }
 
+type Source interface {
+	Generate(ctx context.Context) string
+}
+
 type Field interface {
-	Generate(*[]Field, *map[string]int)
-	GetValue() string
+	Generate(ctx context.Context) string
 	GetType() string
 	GetName() string
 }
@@ -123,17 +127,16 @@ type RandomAsciiField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s *RandomAsciiField) Generate(schema *[]Field, fieldMap *map[string]int) {
+func (s *RandomAsciiSource) Generate(ctx context.Context) string {
 	var sb string
 	for range s.Config.Length {
 		sb += string(uint8(rand.IntN(93) + 33))
 	}
-
-	s.Data = sb
+	return sb
 }
 
-func (s *RandomAsciiField) GetValue() string {
-	return s.Data
+func (s *RandomAsciiField) Generate(ctx context.Context) string {
+	return s.Generate(ctx)
 }
 
 func (s *RandomAsciiField) GetType() string {

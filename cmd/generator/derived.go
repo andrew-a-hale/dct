@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -59,16 +60,18 @@ var env = map[string]any{
 	},
 }
 
-func (s *DerivedField) Generate(schema *[]Field, fieldMap *map[string]int) {
+func (s *DerivedSource) Generate(ctx context.Context) {
+	fieldMap := ctx.Value("fieldMap").(FieldMap)
+	schema := ctx.Value("schema").(Schema)
 	fieldPtrs := make(map[string]reflect.Value)
 	for _, f := range s.Config.Fields {
-		idx := reflect.ValueOf(*fieldMap).MapIndex(reflect.ValueOf(f)).Int()
-		fieldPtrs[f] = reflect.ValueOf(*schema).Index(int(idx))
+		idx := reflect.ValueOf(fieldMap).MapIndex(reflect.ValueOf(f)).Int()
+		fieldPtrs[f] = reflect.ValueOf(schema).Index(int(idx))
 	}
 
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
-		env[k] = field.GetValue()
+		env[k] = field.Generate(ctx)
 	}
 
 	program, err := expr.Compile(
@@ -84,10 +87,14 @@ func (s *DerivedField) Generate(schema *[]Field, fieldMap *map[string]int) {
 		expr.Operator("||", "concat"),
 	)
 	if err != nil {
-		log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Field, err)
+		log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Source, err)
 	}
 	o, _ := expr.Run(program, env)
-	s.Data = fmt.Sprintf("%v", o)
+	fmt.Sprintf("%v", o)
+}
+
+func (s *DerivedField) Generate(ctx context.Context) string {
+	return s.Generate(ctx)
 }
 
 func (s *DerivedField) GetValue() string {

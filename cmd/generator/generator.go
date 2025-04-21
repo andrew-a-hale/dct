@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"io"
 	"log"
 	"os"
@@ -25,6 +26,11 @@ func init() {
 	GenCmd.MarkFlagRequired("lines")
 }
 
+type (
+	Schema   []Field
+	FieldMap map[string]int
+)
+
 var GenCmd = &cobra.Command{
 	Use:   "gen -s [schema] -n [lines] -o [outfile]",
 	Short: "generate dummy data",
@@ -44,12 +50,14 @@ var GenCmd = &cobra.Command{
 
 		fieldMap := make(map[string]int)
 		schema := parseSchema(rawSchema)
+		ctx := context.Background()
+		context.WithValue(ctx, "schema", &schema)
+		context.WithValue(ctx, "fieldMap", &fieldMap)
 		for i := range lines {
 			for i, f := range schema {
 				fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
-				f.Generate(&schema, &fieldMap)
 			}
-			Export(schema, out, i)
+			Export(ctx, out, i)
 		}
 	},
 }
