@@ -27,8 +27,14 @@ func init() {
 }
 
 type (
+	ctxKey   string
 	Schema   []Field
 	FieldMap map[string]int
+)
+
+const (
+	SCHEMA_KEY    ctxKey = "schema"
+	FIELD_MAP_KEY ctxKey = "fieldMap"
 )
 
 var GenCmd = &cobra.Command{
@@ -48,16 +54,17 @@ var GenCmd = &cobra.Command{
 			out = os.Stdout
 		}
 
-		fieldMap := make(map[string]int)
+		fieldMap := make(FieldMap)
 		schema := parseSchema(rawSchema)
+		for i, f := range schema {
+			fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
+		}
+
 		ctx := context.Background()
-		context.WithValue(ctx, "schema", &schema)
-		context.WithValue(ctx, "fieldMap", &fieldMap)
+		ctx = context.WithValue(ctx, SCHEMA_KEY, schema)
+		ctx = context.WithValue(ctx, FIELD_MAP_KEY, fieldMap)
 		for i := range lines {
-			for i, f := range schema {
-				fieldMap[reflect.ValueOf(f).Elem().FieldByName("Field").String()] = i
-			}
-			Export(ctx, out, i)
+			Write(ctx, out, i)
 		}
 	},
 }

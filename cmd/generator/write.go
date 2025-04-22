@@ -4,11 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 )
 
-func Export(ctx context.Context, out io.Writer, line int) {
-	schema := ctx.Value("schema").(Schema)
+func Write(ctx context.Context, out io.Writer, line int) {
+	schema, ok := ctx.Value(SCHEMA_KEY).(Schema)
+	if !ok {
+		log.Fatalln("failed to read schema from context")
+	}
+
 	fields := len(schema)
 
 	// headers

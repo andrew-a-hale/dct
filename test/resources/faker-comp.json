@@ -12,7 +12,7 @@
   {
     "data_type": "string",
     "field": "company",
-    "source": "randomAscii",
+    "source": "companies",
     "config": {
       "length": 20
     }
@@ -20,7 +20,7 @@
   {
     "data_type": "string",
     "field": "email",
-    "source": "randomAscii",
+    "source": "emails",
     "config": {
       "length": 30
     }

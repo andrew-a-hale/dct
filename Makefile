@@ -14,5 +14,8 @@ chart:
 	go run main.go chart -w 5 test/resources/chart.csv 1 count_distinct ;
 	go run main.go chart test/resources/chart.csv 1 count ;
 
+gen-faker:
+	go run main.go gen -n 20000 -s test/resources/faker-comp.json ;
+
 gen:
-	go run main.go gen -n 2 -s test/resources/generator-schema.json ;
+	go run main.go gen -n 2000 -s test/resources/generator-schema.json ;

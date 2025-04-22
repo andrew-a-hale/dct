@@ -11,19 +11,14 @@ import (
 	"github.com/expr-lang/expr"
 )
 
-type DerivedSource struct {
+type DerivedField struct {
+	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
 		Expression string `json:"expression"`
 		Fields     []string
 	} `json:"config"`
-}
-
-type DerivedField struct {
-	Field string `json:"field"`
-	DerivedSource
-	Data string
 }
 
 var env = map[string]any{
@@ -60,9 +55,9 @@ var env = map[string]any{
 	},
 }
 
-func (s *DerivedSource) Generate(ctx context.Context) {
-	fieldMap := ctx.Value("fieldMap").(FieldMap)
-	schema := ctx.Value("schema").(Schema)
+func (s *DerivedField) Generate(ctx context.Context) string {
+	fieldMap := ctx.Value(FIELD_MAP_KEY).(FieldMap)
+	schema := ctx.Value(SCHEMA_KEY).(Schema)
 	fieldPtrs := make(map[string]reflect.Value)
 	for _, f := range s.Config.Fields {
 		idx := reflect.ValueOf(fieldMap).MapIndex(reflect.ValueOf(f)).Int()
@@ -89,16 +84,9 @@ func (s *DerivedSource) Generate(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Source, err)
 	}
+
 	o, _ := expr.Run(program, env)
-	fmt.Sprintf("%v", o)
-}
-
-func (s *DerivedField) Generate(ctx context.Context) string {
-	return s.Generate(ctx)
-}
-
-func (s *DerivedField) GetValue() string {
-	return s.Data
+	return fmt.Sprintf("%v", o)
 }
 
 func (s *DerivedField) GetType() string {
