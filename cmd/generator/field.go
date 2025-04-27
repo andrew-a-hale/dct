@@ -18,8 +18,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type DataType = string
-
 const (
 	STRING = "string"
 	INT    = "int"
@@ -27,7 +25,7 @@ const (
 	BOOL   = "bool"
 )
 
-func ParseField[T any](raw []byte) *T {
+func ParseField[T Field](raw []byte) *T {
 	var parsedField *T
 	err := json.Unmarshal(raw, &parsedField)
 	if err != nil {
@@ -65,7 +63,6 @@ func parseSchema(rawSchema string) Schema {
 	for _, field := range fields {
 		reflectedField := reflect.ValueOf(field).MapIndex(reflect.ValueOf("field"))
 		reflectedSource := reflect.ValueOf(field).MapIndex(reflect.ValueOf("source"))
-
 		j, err := json.Marshal(field)
 		if err != nil {
 			log.Fatalf("failed to stringify field '%s'\n", reflectedField)
@@ -120,7 +117,7 @@ type RandomAsciiField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s *RandomAsciiField) Generate(ctx context.Context) string {
+func (s RandomAsciiField) Generate(ctx context.Context) string {
 	var sb string
 	for range s.Config.Length {
 		sb += string(uint8(rand.IntN(93) + 33))
@@ -128,11 +125,11 @@ func (s *RandomAsciiField) Generate(ctx context.Context) string {
 	return sb
 }
 
-func (s *RandomAsciiField) GetType() string {
+func (s RandomAsciiField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomAsciiField) GetName() string {
+func (s RandomAsciiField) GetName() string {
 	return s.Field
 }
 
@@ -146,16 +143,16 @@ type RandomUniformIntField struct {
 	} `json:"config"`
 }
 
-func (s *RandomUniformIntField) Generate(ctx context.Context) string {
+func (s RandomUniformIntField) Generate(ctx context.Context) string {
 	v := strconv.Itoa(rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min)
 	return v
 }
 
-func (s *RandomUniformIntField) GetType() string {
+func (s RandomUniformIntField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomUniformIntField) GetName() string {
+func (s RandomUniformIntField) GetName() string {
 	return s.Field
 }
 
@@ -170,16 +167,16 @@ type RandomNormalField struct {
 	} `json:"config"`
 }
 
-func (s *RandomNormalField) Generate(ctx context.Context) string {
+func (s RandomNormalField) Generate(ctx context.Context) string {
 	format := fmt.Sprintf("%%0.%df", s.Config.Decimals)
 	return fmt.Sprintf(format, rand.NormFloat64()*s.Config.Std+s.Config.Mean)
 }
 
-func (s *RandomNormalField) GetType() string {
+func (s RandomNormalField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomNormalField) GetName() string {
+func (s RandomNormalField) GetName() string {
 	return s.Field
 }
 
@@ -192,7 +189,7 @@ type RandomPoissonField struct {
 	} `json:"config"`
 }
 
-func (s *RandomPoissonField) Generate(ctx context.Context) string {
+func (s RandomPoissonField) Generate(ctx context.Context) string {
 	return strconv.Itoa(generatePoisson(s.Config.Lambda))
 }
 
@@ -209,69 +206,52 @@ func generatePoisson(lambda int) int {
 	return n
 }
 
-func (s *RandomPoissonField) GetType() string {
+func (s RandomPoissonField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomPoissonField) GetName() string {
+func (s RandomPoissonField) GetName() string {
 	return s.Field
 }
 
 type LastNameField struct {
-	Field      string `json:"field"`
-	Source     string `json:"source"`
-	DataType   string `json:"data_type"`
-	SourceData []string
+	Field    string `json:"field"`
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
 }
 
-func (s *LastNameField) Init() {
-	s.SourceData = sources.LastNames
+func (s LastNameField) Generate(ctx context.Context) string {
+	return sources.LastNames[rand.IntN(len(sources.LastNames))]
 }
 
-func (s *LastNameField) Generate(ctx context.Context) string {
-	if len(s.SourceData) == 0 {
-		s.Init()
-	}
-	return s.SourceData[rand.IntN(len(s.SourceData))]
-}
-
-func (s *LastNameField) GetType() string {
+func (s LastNameField) GetType() string {
 	return s.DataType
 }
 
-func (s *LastNameField) GetName() string {
+func (s LastNameField) GetName() string {
 	return s.Field
 }
 
 type FirstNameField struct {
-	Field      string `json:"field"`
-	Source     string `json:"source"`
-	SourceData []string
-	DataType   string `json:"data_type"`
+	Field    string `json:"field"`
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
 }
 
-func (s *FirstNameField) Init() {
-	for _, t := range sources.FirstNames {
-		s.SourceData = append(s.SourceData, t.Name)
-	}
+func (s FirstNameField) Generate(ctx context.Context) string {
+	return sources.FirstNames[rand.IntN(len(sources.FirstNames))]
 }
 
-func (s *FirstNameField) Generate(ctx context.Context) string {
-	if len(s.SourceData) == 0 {
-		s.Init()
-	}
-	return s.SourceData[rand.IntN(len(s.SourceData))]
-}
-
-func (s *FirstNameField) GetType() string {
+func (s FirstNameField) GetType() string {
 	return s.DataType
 }
 
-func (s *FirstNameField) GetName() string {
+func (s FirstNameField) GetName() string {
 	return s.Field
 }
 
 type RandomDatetimeField struct {
+	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
@@ -279,10 +259,9 @@ type RandomDatetimeField struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
 	} `json:"config"`
-	Field string `json:"field"`
 }
 
-func (s *RandomDatetimeField) Generate(ctx context.Context) string {
+func (s RandomDatetimeField) Generate(ctx context.Context) string {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -326,25 +305,25 @@ func (s *RandomDatetimeField) Generate(ctx context.Context) string {
 	return time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc).Format(time.RFC3339)
 }
 
-func (s *RandomDatetimeField) GetType() string {
+func (s RandomDatetimeField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomDatetimeField) GetName() string {
+func (s RandomDatetimeField) GetName() string {
 	return s.Field
 }
 
 type RandomDateField struct {
+	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
 	} `json:"config"`
-	Field string `json:"field"`
 }
 
-func (s *RandomDateField) Generate(ctx context.Context) string {
+func (s RandomDateField) Generate(ctx context.Context) string {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -384,25 +363,25 @@ func (s *RandomDateField) Generate(ctx context.Context) string {
 	return time.Unix(rand.Int64N(ub-lb)+lb, 0).Format(time.DateOnly)
 }
 
-func (s *RandomDateField) GetType() string {
+func (s RandomDateField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomDateField) GetName() string {
+func (s RandomDateField) GetName() string {
 	return s.Field
 }
 
 type RandomTimeField struct {
+	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
 	} `json:"config"`
-	Field string `json:"field"`
 }
 
-func (s *RandomTimeField) Generate(ctx context.Context) string {
+func (s RandomTimeField) Generate(ctx context.Context) string {
 	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
 	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
 
@@ -448,11 +427,11 @@ func (s *RandomTimeField) Generate(ctx context.Context) string {
 	return time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC).Format(time.TimeOnly)
 }
 
-func (s *RandomTimeField) GetType() string {
+func (s RandomTimeField) GetType() string {
 	return s.DataType
 }
 
-func (s *RandomTimeField) GetName() string {
+func (s RandomTimeField) GetName() string {
 	return s.Field
 }
 
@@ -462,68 +441,50 @@ type UuidField struct {
 	DataType string `json:"data_type"`
 }
 
-func (s *UuidField) Generate(ctx context.Context) string {
+func (s UuidField) Generate(ctx context.Context) string {
 	return uuid.NewString()
 }
 
-func (s *UuidField) GetType() string {
+func (s UuidField) GetType() string {
 	return s.DataType
 }
 
-func (s *UuidField) GetName() string {
+func (s UuidField) GetName() string {
 	return s.Field
 }
 
 type EmailField struct {
-	DataType   string `json:"data_type"`
-	Field      string `json:"field"`
-	Source     string `json:"source"`
-	SourceData []string
+	Field    string `json:"field"`
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
 }
 
-func (s *EmailField) Init() {
-	s.SourceData = sources.GenerateEmails()
+func (s EmailField) Generate(ctx context.Context) string {
+	return sources.Emails[rand.IntN(len(sources.Emails))]
 }
 
-func (s *EmailField) Generate(ctx context.Context) string {
-	if len(s.SourceData) == 0 {
-		s.Init()
-	}
-
-	return s.SourceData[rand.IntN(len(s.SourceData))]
-}
-
-func (s *EmailField) GetType() string {
+func (s EmailField) GetType() string {
 	return "string"
 }
 
-func (s *EmailField) GetName() string {
+func (s EmailField) GetName() string {
 	return s.Field
 }
 
 type CompanyField struct {
-	DataType   string `json:"data_type"`
-	Field      string `json:"field"`
-	Source     string `json:"source"`
-	SourceData []string
+	Field    string `json:"field"`
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
 }
 
-func (s *CompanyField) Init() {
-	s.SourceData = sources.Companies
+func (s CompanyField) Generate(ctx context.Context) string {
+	return sources.Companies[rand.IntN(len(sources.Companies))]
 }
 
-func (s *CompanyField) Generate(ctx context.Context) string {
-	if len(s.SourceData) == 0 {
-		s.Init()
-	}
-
-	return s.SourceData[rand.IntN(len(s.SourceData))]
-}
-
-func (s *CompanyField) GetType() string {
+func (s CompanyField) GetType() string {
 	return s.DataType
 }
 
-func (s *CompanyField) GetName() string {
+func (s CompanyField) GetName() string {
 	return s.Field
 }

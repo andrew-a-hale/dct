@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// TODO: support jsonl and csv formats
 func Write(ctx context.Context, out io.Writer, line int) {
 	schema, ok := ctx.Value(SCHEMA_KEY).(Schema)
 	if !ok {

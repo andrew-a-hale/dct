@@ -1,6 +1,6 @@
 package sources
 
-var LastNames = []string{
+var LastNames = [100]string{
 	"SMITH",
 	"JOHNSON",
 	"WILLIAMS",

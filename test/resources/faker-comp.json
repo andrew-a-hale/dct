@@ -1,6 +1,11 @@
 [
   {
     "data_type": "string",
+    "field": "id",
+    "source": "uuid"
+  },
+  {
+    "data_type": "string",
     "field": "first_name",
     "source": "firstNames"
   },
@@ -12,18 +17,12 @@
   {
     "data_type": "string",
     "field": "company",
-    "source": "companies",
-    "config": {
-      "length": 20
-    }
+    "source": "companies"
   },
   {
     "data_type": "string",
     "field": "email",
-    "source": "emails",
-    "config": {
-      "length": 30
-    }
+    "source": "emails"
   },
   {
     "data_type": "int",
@@ -32,15 +31,6 @@
     "config": {
       "min": 10000000,
       "max": 99999999
-    }
-  },
-  {
-    "data_type": "int",
-    "field": "id",
-    "source": "randomUniformInt",
-    "config": {
-      "min": 1000,
-      "max": 9999999999999
     }
   }
 ]

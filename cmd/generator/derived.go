@@ -16,8 +16,8 @@ type DerivedField struct {
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
-		Expression string `json:"expression"`
-		Fields     []string
+		Expression string   `json:"expression"`
+		Fields     []string `json:"fields"`
 	} `json:"config"`
 }
 
@@ -55,7 +55,7 @@ var env = map[string]any{
 	},
 }
 
-func (s *DerivedField) Generate(ctx context.Context) string {
+func (s DerivedField) Generate(ctx context.Context) string {
 	fieldMap := ctx.Value(FIELD_MAP_KEY).(FieldMap)
 	schema := ctx.Value(SCHEMA_KEY).(Schema)
 	fieldPtrs := make(map[string]reflect.Value)
@@ -89,10 +89,10 @@ func (s *DerivedField) Generate(ctx context.Context) string {
 	return fmt.Sprintf("%v", o)
 }
 
-func (s *DerivedField) GetType() string {
+func (s DerivedField) GetType() string {
 	return s.DataType
 }
 
-func (s *DerivedField) GetName() string {
+func (s DerivedField) GetName() string {
 	return s.Field
 }
