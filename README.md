@@ -19,6 +19,7 @@
 - dct chart {file} {colIndex} {agg}
   - eg. `dct chart left.csv 1 sum`
 - dct gen -s test/resources/faker-comp.json -n 10000
+- dct flattify test/resources/flattify.ndjson -o out.sql
 
 ## DSL For Derived Fields
 

@@ -9,7 +9,7 @@ class BuildError(Exception):
         super().__init__("failed to build dct")
 
 
-SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
+PEEK_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
 
 b = subprocess.run(["go", "build"], capture_output=True)
 if b.stderr:
@@ -55,17 +55,17 @@ def helper_peek_output(filetype: str):
     os.remove("./tmp_test_peek_output.csv")
 
 
-@pytest.mark.parametrize("type", SUPPORTED_FILE_TYPES)
+@pytest.mark.parametrize("type", PEEK_SUPPORTED_FILE_TYPES)
 def test_peek_default(type: str):
     helper_peek_default(type)
 
 
-@pytest.mark.parametrize("type", SUPPORTED_FILE_TYPES)
+@pytest.mark.parametrize("type", PEEK_SUPPORTED_FILE_TYPES)
 def test_peek_5lines(type: str):
     helper_peek_5lines(type)
 
 
-@pytest.mark.parametrize("type", SUPPORTED_FILE_TYPES)
+@pytest.mark.parametrize("type", PEEK_SUPPORTED_FILE_TYPES)
 def test_peek_output(type: str):
     helper_peek_output(type)
 

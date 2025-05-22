@@ -62,7 +62,7 @@ func parseFileArg(args []string) string {
 	file := path.Base(filepath)
 	fileext := strings.ToLower(path.Ext(file))
 
-	if slices.Contains(utils.SUPPORTED_FILETYPES, fileext) {
+	if slices.Contains(utils.PEEK_SUPPORTED_FILETYPES, fileext) {
 		return filepath
 	}
 
