@@ -45,7 +45,7 @@ var CHART_TEMPLATE string = `
 
 var ChartCmd = &cobra.Command{
 	Use:   "chart [file] [col-name] [agg]",
-	Short: "Generate visualizations from data",
+	Short: "Generate visualisations from data",
 	Long:  `Create a simple ASCII bar chart from data file using specified column and aggregation function`,
 	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {

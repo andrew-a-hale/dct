@@ -6,11 +6,10 @@ A Swiss army knife for data engineers to quickly inspect, compare, and generate 
 
 DCT provides a collection of command-line utilities for working with CSV, JSON, NDJSON, and Parquet files:
 
-- **Peek**: Preview file contents with customizable output
-- **Diff**: Compare files with flexible key matching and metric calculations
-- **Chart**: Generate simple visualizations from data files
-- **Art**: Create ASCII art visualizations
-- **Generator**: Generate synthetic data with customizable schemas
+- **Peek**: Preview file contents
+- **Diff**: Compare files with key matching and aggregates
+- **Chart**: Generate simple visualisations from data files
+- **Generator**: Generate synthetic data with customisable schemas
 - **Flattify**: Convert nested JSON structures to flat formats or SQL
 
 ## Commands
