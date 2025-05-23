@@ -19,3 +19,7 @@ gen-faker:
 
 gen:
 	go run main.go gen -n 2000 -s test/resources/generator-schema.json ;
+
+flattify:
+	go run main.go flattify -s test/resources/flattify.ndjson ;
+	

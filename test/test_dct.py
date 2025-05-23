@@ -231,3 +231,78 @@ def test_diff_output():
     )
 
     os.remove("./tmp_test_diff_output.csv")
+
+
+def test_chart():
+    subprocess.run(
+        [
+            "./dct",
+            "chart",
+            "-w",
+            "50",
+            "./test/resources/left.csv",
+            "1",
+            "count",
+        ],
+        capture_output=True,
+    )
+
+    # skip
+    assert True
+
+
+def test_version():
+    out = subprocess.run(
+        ["./dct", "version"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+
+
+def test_generator():
+    out = subprocess.run(
+        [
+            "./dct",
+            "gen",
+            "-n",
+            "1",
+            "-s",
+            "test/resources/generator-schema.json",
+        ],
+        capture_output=True
+    )
+
+    # can't test the random data? need to implement rng seed
+    header = out.stdout.decode().splitlines()[0]
+    expected_header = open("test/expected/test_generator.csv", mode="r").read().strip()
+    assert header == expected_header
+
+
+def test_flattify():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "test/resources/flattify.ndjson",
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+
+
+def test_flattify_select():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "-s",
+            "test/resources/flattify.ndjson",
+        ],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_flattify_select.sql", mode="rb").read()

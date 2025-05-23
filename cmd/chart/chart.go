@@ -11,14 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"unicode"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
 
 func init() {
-	ChartCmd.Flags().Int32VarP(&width, "width", "w", 0, "width of the chart")
+	ChartCmd.Flags().Int32VarP(&width, "width", "w", 0, "Width of the chart in characters")
 }
 
 var (
@@ -45,10 +44,10 @@ var CHART_TEMPLATE string = `
 `
 
 var ChartCmd = &cobra.Command{
-	Use:   "chart [file] [col-index (1-based)] [agg]",
-	Short: "create a simple bar chart",
-	Long:  "",
-	Args:  cobra.MatchAll(cobra.MinimumNArgs(3), cobra.OnlyValidArgs),
+	Use:   "chart [file] [col-name] [agg]",
+	Short: "Generate visualizations from data",
+	Long:  `Create a simple ASCII bar chart from data file using specified column and aggregation function`,
+	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		checkArgs(args)
 		xs, ys := processAgg(args)
@@ -126,42 +125,38 @@ func makeBar(x float64, pixelValue float64, texture []byte) string {
 	return strings.Repeat(string(texture), int(math.Ceil(x*pixelValue)))
 }
 
-func checkArgs(args []string) (filename, colIndex, agg string) {
+func checkArgs(args []string) (filename, colName, agg string) {
 	filename = args[0]
 	_, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("file does not exist: %v\n", err)
 	}
 
-	colIndex = args[1]
-	for _, s := range strings.Split(colIndex, "") {
-		r := []rune(s)[0]
-		if !unicode.IsDigit(r) {
-			log.Fatalf("invalid col index: %v\n", err)
-		}
-	}
+	colName = args[1]
 
 	agg = args[2]
 	utils.CheckAgg(agg)
 
-	return filename, colIndex, agg
+	return filename, colName, agg
 }
 
 func processAgg(args []string) ([]string, []float64) {
 	// format custom agg sql
 	var agg string
+	colName := args[1]
+
 	switch args[2] {
 	case utils.COUNT_DISTINCT:
-		agg = fmt.Sprintf("count(distinct #%s)", args[1])
+		agg = fmt.Sprintf("count(distinct #%s)", colName)
 	default:
-		agg = fmt.Sprintf("%s(#%s)", args[2], args[1])
+		agg = fmt.Sprintf("%s(#%s)", args[2], colName)
 	}
 
 	// read file
 	result, err := utils.Query(
 		fmt.Sprintf(
 			`select #%s, %s as agg from '%s' group by 1 order by agg desc`,
-			args[1],
+			colName,
 			agg,
 			args[0],
 		),

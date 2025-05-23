@@ -11,16 +11,15 @@ import (
 )
 
 var (
-	seed      int
 	rawSchema string
 	lines     int
 	outfile   string
 )
 
 func init() {
-	GenCmd.Flags().StringVarP(&rawSchema, "schema", "s", "", "schema to generate")
-	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "output file")
-	GenCmd.Flags().IntVarP(&lines, "lines", "n", 0, "lines to generate")
+	GenCmd.Flags().StringVarP(&rawSchema, "schema", "s", "", "Schema definition file path")
+	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "Output file path (default: stdout)")
+	GenCmd.Flags().IntVarP(&lines, "lines", "n", 0, "Number of data rows to generate")
 
 	GenCmd.MarkFlagRequired("schema")
 	GenCmd.MarkFlagRequired("lines")
@@ -39,8 +38,8 @@ const (
 
 var GenCmd = &cobra.Command{
 	Use:   "gen -s [schema] -n [lines] -o [outfile]",
-	Short: "generate dummy data",
-	Long:  `generate dummy data`,
+	Short: "Generate synthetic data",
+	Long:  `Create realistic test data based on a schema definition with support for custom field types and derived fields`,
 	Args:  nil,
 	Run: func(cmd *cobra.Command, args []string) {
 		var out io.Writer

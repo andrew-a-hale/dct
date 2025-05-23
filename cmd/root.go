@@ -15,8 +15,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "dct",
-	Short: "dct is a data file checking tool",
-	Long:  `A data file checking tool to quickly check and compare data files of various formats`,
+	Short: "Swiss army knife for data engineers",
+	Long:  `DCT provides utilities to quickly inspect, compare, and manipulate flat data files in CSV, JSON, NDJSON, and Parquet formats`,
 }
 
 func init() {

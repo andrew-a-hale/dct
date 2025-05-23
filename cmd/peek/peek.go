@@ -22,14 +22,14 @@ var (
 )
 
 func init() {
-	PeekCmd.Flags().StringVarP(&output, "output", "o", "", "write to output file")
-	PeekCmd.Flags().Int32VarP(&lines, "lines", "n", 0, "number of lines to output")
+	PeekCmd.Flags().StringVarP(&output, "output", "o", "", "Output to file instead of stdout")
+	PeekCmd.Flags().Int32VarP(&lines, "lines", "n", 0, "Number of lines to display")
 }
 
 var PeekCmd = &cobra.Command{
 	Use:   "peek [FILE]",
-	Short: "peek into a file",
-	Long:  "",
+	Short: "Preview file contents",
+	Long:  `Display the first few lines of a data file to quickly inspect its structure and content`,
 	Args:  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := parseFileArg(args)

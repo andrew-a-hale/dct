@@ -32,8 +32,8 @@ func fpsToDuration() time.Duration {
 
 var ArtCmd = &cobra.Command{
 	Use:   "art",
-	Short: "some dct art",
-	Long:  "",
+	Short: "Display ASCII art visualizations",
+	Long:  `Show animated ASCII art related to the DCT tool and its components`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		graphics := getGraphics()

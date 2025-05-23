@@ -8,8 +8,8 @@ import (
 
 var VersionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of dct",
-	Long:  "Print the version number of dct",
+	Short: "Display DCT version",
+	Long:  `Print the current version number of the DCT tool`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("dct file checker v0.1")

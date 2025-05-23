@@ -41,21 +41,21 @@ type metricSpec struct {
 }
 
 func init() {
-	DiffCmd.Flags().StringVarP(&output, "output", "o", "", "write to output file")
+	DiffCmd.Flags().StringVarP(&output, "output", "o", "", "Output comparison to file")
 	DiffCmd.Flags().StringVarP(&metrics, "metrics", "m", "",
-		`custom metrics to compare. metrics must be supplied in the following format
+		`Metrics specification for comparison, using JSON format:
   {{"agg": "mean", "left": "a", "right": "b"}, {"agg": "count_distinct", "left": "c"}}
-  supported agg are: mean, median, min, max, count_distinct`)
+  Supported aggregations: mean, median, min, max, count_distinct`)
 
-	DiffCmd.Flags().BoolVarP(&all, "all", "a", false, "show all rows")
+	DiffCmd.Flags().BoolVarP(&all, "all", "a", false, "Show all rows, not just differences")
 }
 
 var DiffCmd = &cobra.Command{
-	Use:   "diff [keySpec] [file1] [file2]",
-	Short: "diff two files",
-	Long: `aggregate to files and compare.
-keys must be supplied in the following format
-  {{"left": "a", "right": "b", "alias": "a"}, {"left": "c"", "right": "c", "alias": "c"}}`,
+	Use:   "diff [keys] [file1] [file2]",
+	Short: "Compare files with key matching",
+	Long: `Compare two files using key matching and metric calculations. 
+	Specify keys in format: left_key[=right_key] (comma-separated for multiple keys)
+	Use --metrics to define comparison metrics and --all to show all differences`,
 	Args: cobra.MatchAll(cobra.ExactArgs(3), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		keys, left, right := parseArgs(args)
