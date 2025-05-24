@@ -18,6 +18,7 @@ builds:
       - CGO_ENABLED=1
     goos:
       - linux
+      - windows
       - darwin
     main: main.go
     binary: dct
