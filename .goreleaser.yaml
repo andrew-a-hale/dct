@@ -20,7 +20,7 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/root
+    main: ./cmd/root.go
     binary: root
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
