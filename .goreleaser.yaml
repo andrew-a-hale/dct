@@ -20,6 +20,8 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
     main: main.go
     binary: dct
     ldflags:
