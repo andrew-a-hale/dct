@@ -39,11 +39,6 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Diagnostic - Show Go Environment
-        run: |
-          go env GOOS GOARCH CGO_ENABLED
-          goreleaser check # This command also helps diagnose potential issues
-
       - name: Install Build Dependencies (${{ matrix.os }})
         run: ${{ matrix.build_deps }}
 
