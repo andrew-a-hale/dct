@@ -6,6 +6,36 @@ on:
       - 'v*.*.*'
 
 jobs:
+  release-windows-amd64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release -f goreleaser/.goreleaser-windows.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release-linux-amd64:
     runs-on: ubuntu-latest
     permissions:
@@ -32,11 +62,9 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --single-target
+          args: release -f goreleaser/.goreleaser-linux.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS: linux
-          GOARCH: amd64
 
   release-macos:
     runs-on: macos-latest
@@ -59,19 +87,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --single-target
+          args: release -f goreleaser/.goreleaser-macos.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS: darwin
-          GOARCH: amd64,arm64
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --single-target
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS: darwin
-          GOARCH: arm64
