@@ -7,8 +7,27 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-linux-windows: # Job for Linux (and potentially Windows) builds
-    runs-on: ubuntu-latest
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch_targets: "amd64,arm64,386"
+            build_deps: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential libc6-dev-i386 gcc-aarch64-linux-gnu
+            goreleaser_additional_goos: ",windows"
+
+          - os: macos-latest
+            goos: darwin
+            goarch_targets: "amd64,arm64"
+            build_deps: |
+              xcode-select --install || true
+            goreleaser_additional_goos: ""
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,42 +39,26 @@ jobs:
         with:
           go-version: '1.24'
 
-      # Install Linux build dependencies for 64-bit and 32-bit if needed
-      - name: Install Linux build dependencies
+      - name: Diagnostic - Show Go Environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libc6-dev-i386
+          go env GOOS GOARCH CGO_ENABLED
+          goreleaser check # This command also helps diagnose potential issues
 
-      - name: Run GoReleaser for Linux and Windows
+      - name: Install Build Dependencies (${{ matrix.os }})
+        run: ${{ matrix.build_deps }}
+
+      - name: Set GoReleaser Build Environment
+        run: |
+          echo "GOOS_TO_BUILD=${{ matrix.goos }}${{ matrix.goreleaser_additional_goos }}" >> $GITHUB_ENV
+          echo "GOARCH_TO_BUILD=${{ matrix.goarch_targets }}" >> $GITHUB_ENV
+
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: release --clean # Using release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-macos: # Separate job for macOS builds
-    runs-on: macos-latest # THIS IS ESSENTIAL for CGO on macOS
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Xcode Command Line Tools
-        run: xcode-select --install || true
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Run GoReleaser for macOS
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOS_ALLOW: ${{ env.GOOS_TO_BUILD }}
+          GOARCH_ALLOW: ${{ env.GOARCH_TO_BUILD }}
