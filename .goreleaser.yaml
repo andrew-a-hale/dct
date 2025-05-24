@@ -20,10 +20,16 @@ builds:
       - linux
       - windows
       - darwin
+    ignore:
+      - goos: linux
+        goarch: 386
     main: main.go
     binary: dct
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+checksum:
+  name_template: "checksums.txt"
 
 changelog:
   sort: asc
