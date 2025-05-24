@@ -6,28 +6,8 @@ on:
       - 'v*.*.*'
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            goos: linux
-            goarch_builds: "amd64,arm64"
-            build_deps: |
-              sudo apt-get update
-              sudo apt-get install -y build-essential gcc-aarch64-linux-gnu
-            goreleaser_goos_allow: "linux,windows"
-            goreleaser_goarch_allow: "amd64,arm64"
-
-          - os: macos-latest
-            goos: darwin
-            goarch_builds: "amd64,arm64"
-            build_deps: |
-              xcode-select --install || true
-            goreleaser_goos_allow: "darwin"
-            goreleaser_goarch_allow: "amd64,arm64"
+  release-linux-amd64:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -40,15 +20,10 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Install Build Dependencies (${{ matrix.os }})
-        run: ${{ matrix.build_deps }}
-
-      - name: Debug - Show GoReleaser Allow Filters
+      - name: Install Build Dependencies
         run: |
-          echo "GOOS_ALLOW will be: ${{ matrix.goreleaser_goos_allow }}"
-          echo "GOARCH_ALLOW will be: ${{ matrix.goreleaser_goarch_allow }}"
-          echo "Current GOOS: $(go env GOOS)"
-          echo "Current GOARCH: $(go env GOARCH)"
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -58,6 +33,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS: ${{ matrix.goos }}
-          GOOS_ALLOW: ${{ matrix.goreleaser_goos_allow }}
-          GOARCH_ALLOW: ${{ matrix.goreleaser_goarch_allow }}
