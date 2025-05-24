@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/marcboeker/go-duckdb"
 )
 
 type Header struct {
