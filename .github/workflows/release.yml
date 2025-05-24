@@ -1,4 +1,3 @@
-# .github/workflows/release.yml
 name: Release
 
 on:
@@ -15,18 +14,22 @@ jobs:
         include:
           - os: ubuntu-latest
             goos: linux
-            goarch_targets: "amd64,arm64,386"
+            goarch_builds: "amd64,arm64,386"
             build_deps: |
               sudo apt-get update
-              sudo apt-get install -y build-essential libc6-dev-i386 gcc-aarch64-linux-gnu
-            goreleaser_additional_goos: ",windows"
+              sudo apt-get install -y build-essential libc6-dev-i386 linux-libc-dev:i386 gcc-aarch64-linux-gnu
+            goreleaser_goos_allow: "linux,windows"
+            goreleaser_goarch_allow: "amd64,arm64,386"
+
 
           - os: macos-latest
             goos: darwin
-            goarch_targets: "amd64,arm64"
+            goarch_builds: "amd64,arm64"
             build_deps: |
               xcode-select --install || true
-            goreleaser_additional_goos: ""
+            goreleaser_goos_allow: "darwin"
+            goreleaser_goarch_allow: "amd64,arm64"
+
 
     steps:
       - name: Checkout code
@@ -37,23 +40,27 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.22'
 
       - name: Install Build Dependencies (${{ matrix.os }})
         run: ${{ matrix.build_deps }}
 
-      - name: Set GoReleaser Build Environment
+      - name: Debug - Show GoReleaser Allow Filters
         run: |
-          echo "GOOS_TO_BUILD=${{ matrix.goos }}${{ matrix.goreleaser_additional_goos }}" >> $GITHUB_ENV
-          echo "GOARCH_TO_BUILD=${{ matrix.goarch_targets }}" >> $GITHUB_ENV
+          echo "GOOS_ALLOW will be: ${{ matrix.goreleaser_goos_allow }}"
+          echo "GOARCH_ALLOW will be: ${{ matrix.goreleaser_goarch_allow }}"
+          echo "Current GOOS: $(go env GOOS)"
+          echo "Current GOARCH: $(go env GOARCH)"
+
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean # Using release --clean
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS_ALLOW: ${{ env.GOOS_TO_BUILD }}
-          GOARCH_ALLOW: ${{ env.GOARCH_TO_BUILD }}
+          GOOS: ${{ matrix.goos }}
+          GOOS_ALLOW: ${{ matrix.goreleaser_goos_allow }}
+          GOARCH_ALLOW: ${{ matrix.goreleaser_goarch_allow }}
