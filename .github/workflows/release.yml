@@ -35,8 +35,8 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS_ALLOW: linux
-          GOARCH_ALLOW: amd64
+          GOOS: linux
+          GOARCH: amd64
 
   release-macos:
     runs-on: macos-latest
@@ -62,5 +62,16 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOS_ALLOW: darwin
-          GOARCH_ALLOW: amd64,arm64
+          GOOS: darwin
+          GOARCH: amd64,arm64
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOS: darwin
+          GOARCH: arm64
