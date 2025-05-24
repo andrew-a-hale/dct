@@ -55,7 +55,10 @@ dct diff a examples/left.csv examples/right.csv -m examples/metrics.json
 Generate simple charts from data:
 
 ```bash
-dct chart <file> <colIndex> <aggregation>
+dct chart [file] [col-name] [agg] [flags]
+
+Flags:
+  -w, --width int32   Width of the chart in characters
 
 Examples
 dct chart -w 50 examples/left.csv 1 count
@@ -70,7 +73,12 @@ dct chart examples/chart.csv 1 count
 Generate synthetic data:
 
 ```bash
-dct gen -s <schema_file> -n <count>
+dct gen -s [schema] -n [lines] -o [outfile] [flags]
+
+Flags:
+  -n, --lines int        Number of data rows to generate
+  -o, --outfile string   Output file path (default: stdout)
+  -s, --schema string    Schema definition file path
 
 Examples
 dct gen -n 200 -s examples/generator-schema.json
@@ -89,7 +97,7 @@ Convert nested JSON to flat formats:
 
 ```bash
 dct flattify <file> [options]
-  -s, --sql                  Create DuckDB-compliant SQL statement
+  -s, --sql              Create DuckDB-compliant SQL statement
   -o, --output <file>    Output to file
 
 Example
