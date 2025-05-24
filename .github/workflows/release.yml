@@ -14,13 +14,12 @@ jobs:
         include:
           - os: ubuntu-latest
             goos: linux
-            goarch_builds: "amd64,arm64,386"
+            goarch_builds: "amd64,arm64"
             build_deps: |
               sudo apt-get update
-              sudo apt-get install -y build-essential libc6-dev-i386 linux-libc-dev:i386 gcc-aarch64-linux-gnu
+              sudo apt-get install -y build-essential gcc-aarch64-linux-gnu
             goreleaser_goos_allow: "linux,windows"
-            goreleaser_goarch_allow: "amd64,arm64,386"
-
+            goreleaser_goarch_allow: "amd64,arm64"
 
           - os: macos-latest
             goos: darwin
@@ -29,7 +28,6 @@ jobs:
               xcode-select --install || true
             goreleaser_goos_allow: "darwin"
             goreleaser_goarch_allow: "amd64,arm64"
-
 
     steps:
       - name: Checkout code
@@ -40,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.24'
 
       - name: Install Build Dependencies (${{ matrix.os }})
         run: ${{ matrix.build_deps }}
@@ -51,7 +49,6 @@ jobs:
           echo "GOARCH_ALLOW will be: ${{ matrix.goreleaser_goarch_allow }}"
           echo "Current GOOS: $(go env GOOS)"
           echo "Current GOARCH: $(go env GOARCH)"
-
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
