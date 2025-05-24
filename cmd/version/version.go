@@ -14,6 +14,6 @@ var VersionCmd = &cobra.Command{
 	Long:  `Print the current version number of the DCT tool`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("dct file checker " + version)
+		fmt.Println("dct file checker v" + version)
 	},
 }

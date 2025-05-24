@@ -16,7 +16,7 @@ builds:
     main: main.go
     binary: dct
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+      - -s -w -X dct/cmd/version.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 checksum:
   name_template: "checksums-win.txt"
