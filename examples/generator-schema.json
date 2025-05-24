@@ -1,0 +1,127 @@
+[
+  {
+    "data_type": "string",
+    "field": "uuid",
+    "source": "uuid"
+  },
+  {
+    "data_type": "string",
+    "field": "nonce",
+    "source": "randomAscii",
+    "config": {
+      "length": 10
+    }
+  },
+  {
+    "data_type": "int",
+    "field": "age",
+    "source": "randomUniformInt",
+    "config": {
+      "min": 0,
+      "max": 100
+    }
+  },
+  {
+    "data_type": "float",
+    "field": "height",
+    "source": "randomNormal",
+    "config": {
+      "mean": 175,
+      "std": 10,
+      "digits": 5,
+      "decimals": 2
+    }
+  },
+  {
+    "data_type": "float",
+    "field": "weight",
+    "source": "randomNormal",
+    "config": {
+      "mean": 70,
+      "std": 10,
+      "digits": 5,
+      "decimals": 2
+    }
+  },
+  {
+    "data_type": "int",
+    "field": "siblings",
+    "source": "randomPoisson",
+    "config": {
+      "lambda": 2
+    }
+  },
+  {
+    "data_type": "string",
+    "field": "first_name",
+    "source": "firstNames"
+  },
+  {
+    "data_type": "string",
+    "field": "last_name",
+    "source": "lastNames"
+  },
+  {
+    "data_type": "string",
+    "field": "full_name",
+    "source": "derived",
+    "config": {
+      "fields": [
+        "first_name",
+        "last_name"
+      ],
+      "expression": "first_name || ' ' || last_name"
+    }
+  },
+  {
+    "data_type": "float",
+    "field": "bmi",
+    "source": "derived",
+    "config": {
+      "fields": [
+        "weight",
+        "height"
+      ],
+      "expression": "weight / (height ^ 2)"
+    }
+  },
+  {
+    "data_type": "float",
+    "field": "rainbow",
+    "source": "derived",
+    "config": {
+      "fields": [
+        "weight",
+        "height"
+      ],
+      "expression": "weight + height ^ 2 - weight / height * (weight % 200) ** 5"
+    }
+  },
+  {
+    "data_type": "string",
+    "field": "last_notification_at",
+    "source": "randomDatetime",
+    "config": {
+      "tz": "UTC",
+      "max": "2025-01-01 00:00:00"
+    }
+  },
+  {
+    "data_type": "string",
+    "field": "date_of_birth",
+    "source": "randomDate",
+    "config": {
+      "min": "2000-01-01",
+      "max": "2023-01-01"
+    }
+  },
+  {
+    "data_type": "string",
+    "field": "wake_up",
+    "source": "randomTime",
+    "config": {
+      "min": "02:00:00",
+      "max": "10:00:00"
+    }
+  }
+]

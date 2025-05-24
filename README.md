@@ -14,7 +14,7 @@ DCT provides a collection of command-line utilities for working with CSV, JSON, 
 
 ## Commands
 
-Some examples are available in the `Makefile`.
+Some examples are available in the `examples/` directory.
 
 ### Peek
 
@@ -24,6 +24,10 @@ Preview file contents:
 dct peek <file> [options]
   -o, --output <file>    Output to file (default: stdout)
   -n, --lines <number>   Number of lines to display
+
+Examples
+dct peek examples/left.csv
+dct peek examples/left.csv -n 10
 ```
 
 ### Diff
@@ -41,6 +45,9 @@ Metrics spec:
   - JSON: {agg: {left: col, right: col}, ...}
   - File path: {file}.json
   - Aggregations: mean, median, min, max, count_distinct
+
+Example
+dct diff a examples/left.csv examples/right.csv -m examples/metrics.json
 ```
 
 ### Chart
@@ -49,7 +56,13 @@ Generate simple charts from data:
 
 ```bash
 dct chart <file> <colIndex> <aggregation>
-Example: dct chart left.csv 1 sum
+
+Examples
+dct chart -w 50 examples/left.csv 1 count
+dct chart -w 23 examples/right.csv 1 sum
+dct chart -w 10 examples/right.csv 1 max
+dct chart -w 5 examples/chart.csv 1 count_distinct
+dct chart examples/chart.csv 1 count
 ```
 
 ### Generator
@@ -58,7 +71,10 @@ Generate synthetic data:
 
 ```bash
 dct gen -s <schema_file> -n <count>
-Example: dct gen -s test/resources/faker-comp.json -n 10000
+
+Examples
+dct gen -n 200 -s examples/generator-schema.json
+dct gen -n 20000 -s examples/faker-comp.json
 ```
 
 #### DSL For Derived Fields
@@ -75,4 +91,8 @@ Convert nested JSON to flat formats:
 dct flattify <file> [options]
   -s, --sql                  Create DuckDB-compliant SQL statement
   -o, --output <file>    Output to file
+
+Example
+dct flattify -s examples/flattify.ndjson
+dct flattify examples/flattify.ndjson
 ```

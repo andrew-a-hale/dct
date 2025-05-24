@@ -1,0 +1,36 @@
+[
+  {
+    "data_type": "string",
+    "field": "id",
+    "source": "uuid"
+  },
+  {
+    "data_type": "string",
+    "field": "first_name",
+    "source": "firstNames"
+  },
+  {
+    "data_type": "string",
+    "field": "last_name",
+    "source": "lastNames"
+  },
+  {
+    "data_type": "string",
+    "field": "company",
+    "source": "companies"
+  },
+  {
+    "data_type": "string",
+    "field": "email",
+    "source": "emails"
+  },
+  {
+    "data_type": "int",
+    "field": "phone_number",
+    "source": "randomUniformInt",
+    "config": {
+      "min": 10000000,
+      "max": 99999999
+    }
+  }
+]

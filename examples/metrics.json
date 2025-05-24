@@ -1,0 +1,29 @@
+{
+  "metrics": [
+    {
+      "agg": "mean",
+      "left": "b",
+      "right": "b"
+    },
+    {
+      "agg": "median",
+      "left": "b",
+      "right": "b"
+    },
+    {
+      "agg": "min",
+      "left": "b",
+      "right": "b"
+    },
+    {
+      "agg": "max",
+      "left": "b",
+      "right": "b"
+    },
+    {
+      "agg": "count_distinct",
+      "left": "c",
+      "right": "c"
+    }
+  ]
+}
