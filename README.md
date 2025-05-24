@@ -55,7 +55,7 @@ dct diff a examples/left.csv examples/right.csv -m examples/metrics.json
 Generate simple charts from data:
 
 ```bash
-dct chart [file] [col-name] [agg] [flags]
+dct chart [file] [colIndex] [agg] [flags]
 
 Flags:
   -w, --width int32   Width of the chart in characters
