@@ -158,7 +158,7 @@ func generateMetricSql(spec metricSpec) (left, right, main, check string) {
 		}
 
 		main += fmt.Sprintf(
-			"l_%s_%s, r_%s_%s, coalesce(l_%s_%s = r_%s_%s, false) as %s_%s_eq_flag",
+			"l_%s_%s, r_%s_%s, coalesce(l_%s_%s = r_%s_%s, false) as %s_%s_eq",
 			metric.Left,
 			metric.Agg,
 			metric.Left,

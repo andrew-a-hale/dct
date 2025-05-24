@@ -6,11 +6,6 @@
       "right": "b"
     },
     {
-      "agg": "median",
-      "left": "b",
-      "right": "b"
-    },
-    {
       "agg": "min",
       "left": "b",
       "right": "b"
