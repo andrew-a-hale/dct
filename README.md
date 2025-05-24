@@ -14,7 +14,7 @@ DCT provides a collection of command-line utilities for working with CSV, JSON, 
 
 ## Commands
 
-Some examples are available in the `examples/` directory.
+Some examples are available in the `examples/` directory to use with `dct`.
 
 ### Peek
 
