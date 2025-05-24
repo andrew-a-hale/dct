@@ -6,10 +6,30 @@ on:
       - 'v*.*.*'
 
 jobs:
-  release-windows-amd64:
-    runs-on: ubuntu-latest
+  build-and-release:
     permissions:
       contents: write
+    strategy:
+      matrix:
+        include:
+          - platform: windows-amd64
+            os_runner: ubuntu-latest
+            goreleaser_config: goreleaser/.goreleaser-windows.yaml
+            dependencies: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential gcc-mingw-w64
+          - platform: linux-amd64
+            os_runner: ubuntu-latest
+            goreleaser_config: goreleaser/.goreleaser-linux.yaml
+            dependencies: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential
+          - platform: macos
+            os_runner: macos-latest
+            goreleaser_config: goreleaser/.goreleaser-macos.yaml
+            dependencies: echo "None"
+
+    runs-on: ${{ matrix.os_runner }}
 
     steps:
       - name: Checkout code
@@ -23,71 +43,14 @@ jobs:
           go-version: '1.24'
 
       - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-          sudo apt-get install -y gcc-mingw-w64
+        if: matrix.os_runner == 'ubuntu-latest'
+        run: ${{ matrix.dependencies }}
 
-      - name: Run GoReleaser
+      - name: Run GoReleaser for ${{ matrix.platform }}
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release -f goreleaser/.goreleaser-windows.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-linux-amd64:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-
-      - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release -f goreleaser/.goreleaser-linux.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-macos:
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release -f goreleaser/.goreleaser-macos.yaml
+          args: release --clean -f ${{ matrix.goreleaser_config }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
