@@ -1,4 +1,4 @@
-╭──────┬──────┬──────┬───────────╮
-│  a   │l_cnt │r_cnt │cnt_eq_flag│
-│BIGINT│BIGINT│BIGINT│  BOOLEAN  │
-╰──────┴──────┴──────┴───────────╯
+╭──────┬──────┬──────┬───────╮
+│  a   │l_cnt │r_cnt │cnt_eq │
+│BIGINT│BIGINT│BIGINT│BOOLEAN│
+╰──────┴──────┴──────┴───────╯

@@ -48,6 +48,7 @@ Metrics spec:
 
 Example
 dct diff a examples/left.csv examples/right.csv -m examples/metrics.json
+dct diff a examples/left.csv examples/right.csv -m "{\"metrics\":[{\"agg\":\"count_distinct\",\"left\":\"c\",\"right\":\"c\"}]}"
 ```
 
 ### Chart
@@ -83,6 +84,7 @@ Flags:
 Examples
 dct gen -n 200 -s examples/generator-schema.json
 dct gen -n 20000 -s examples/faker-comp.json
+dct gen -n 20000 -s "[ { \"data_type\": \"string\", \"field\": \"id\", \"source\": \"uuid\" } ]"
 ```
 
 #### DSL For Derived Fields

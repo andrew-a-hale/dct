@@ -69,7 +69,7 @@ var DiffCmd = &cobra.Command{
 			}
 		}
 
-		metricConf := metricSpec{}
+		var metricConf metricSpec
 		if metrics != "" {
 			metricConf = parseMetrics(metrics)
 		}
@@ -197,11 +197,11 @@ func generateSql(keys keySpec, left, right string, metrics metricSpec) string {
 ), file2 as (
   %s
 )
-select %s, l_cnt, r_cnt, coalesce(l_cnt = r_cnt, false) as cnt_eq_flag, %s
+select %s, l_cnt, r_cnt, coalesce(l_cnt = r_cnt, false) as cnt_eq, %s
 from file1
 full join file2 using (%s)
 where l_cnt <> r_cnt %s
-order by cnt_eq_flag`,
+order by cnt_eq`,
 		leftSql,
 		rightSql,
 		leftKeys,

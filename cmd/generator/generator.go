@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"os"
@@ -66,4 +67,22 @@ var GenCmd = &cobra.Command{
 			Write(ctx, out, i)
 		}
 	},
+}
+
+func parseInputSchema(schemaString string) any {
+	sch := []byte(schemaString)
+
+	file, err := os.Open(schemaString)
+	if err == nil {
+		sch, _ = io.ReadAll(file)
+	}
+	defer file.Close()
+
+	var schema any
+	err = json.Unmarshal(sch, &schema)
+	if err != nil {
+		log.Fatalf("Error: failed to parse metric config: %v\n", err)
+	}
+
+	return sch
 }

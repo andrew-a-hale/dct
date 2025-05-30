@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"math"
 	"math/rand/v2"
@@ -40,7 +39,9 @@ func ParseField[T Field](raw []byte) *T {
 
 func parseSchema(rawSchema string) Schema {
 	var schema []byte
-	if fs.ValidPath(rawSchema) {
+	if json.Valid([]byte(rawSchema)) {
+		schema = []byte(rawSchema)
+	} else {
 		f, err := os.Open(rawSchema)
 		if err != nil {
 			log.Fatalf("failed to open schema file: %v\n", err)
@@ -49,7 +50,7 @@ func parseSchema(rawSchema string) Schema {
 
 		schema, err = io.ReadAll(f)
 		if err != nil {
-			log.Fatalf("failed to open schema file: %v\n", err)
+			log.Fatalf("failed to read schema file: %v\n", err)
 		}
 	}
 

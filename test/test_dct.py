@@ -10,6 +10,7 @@ class BuildError(Exception):
 
 
 PEEK_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
+PROFILE_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
 
 b = subprocess.run(["go", "build"], capture_output=True)
 if b.stderr:
@@ -306,3 +307,13 @@ def test_flattify_select():
 
     assert out.stderr == b""
     assert out.stdout == open("./test/expected/test_flattify_select.sql", mode="rb").read()
+
+
+@pytest.mark.parametrize("filetype", PROFILE_SUPPORTED_FILE_TYPES)
+def test_prof(filetype: str):
+    out = subprocess.run(
+        ["./dct", "prof", f"./test/resources/left.{filetype}"],
+        capture_output=True,
+    )
+
+    assert out.stdout == open("./test/expected/test_peek_default.txt", mode="rb").read()

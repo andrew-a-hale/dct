@@ -7,6 +7,7 @@ import (
 	"dct/cmd/flattify"
 	"dct/cmd/generator"
 	"dct/cmd/peek"
+	"dct/cmd/profile"
 	"dct/cmd/version"
 	"log"
 
@@ -27,6 +28,7 @@ func init() {
 	rootCmd.AddCommand(diff.DiffCmd)
 	rootCmd.AddCommand(generator.GenCmd)
 	rootCmd.AddCommand(flattify.FlattifyCmd)
+	rootCmd.AddCommand(profile.ProfileCmd)
 }
 
 func Execute() {
