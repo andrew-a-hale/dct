@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"maps"
+	"math"
 	"os"
 	"path"
 	"slices"
@@ -18,6 +19,7 @@ var (
 	defaultWriter = os.Stdout
 	output        string
 	writer        io.Writer
+	topK          = 10000
 )
 
 func init() {
@@ -47,12 +49,7 @@ var ProfileCmd = &cobra.Command{
 			log.Fatalf("failed to read file: %v", err)
 		}
 
-		report, err := analyse(result)
-		if err != nil {
-			log.Fatalf("failed to analyse file: %v", err)
-		}
-
-		fmt.Fprintf(writer, "Profile\n%s", report)
+		analyse(result, writer)
 	},
 }
 
@@ -72,54 +69,74 @@ func parseFileArg(args []string) string {
 	return ""
 }
 
-func analyse(result utils.Result) (string, error) {
-	var report string
-	var err error
+func analyse(result utils.Result, writer io.Writer) {
+	fmt.Fprintln(writer, "-- PROFILE -- ")
+
 	for i := range len(result.Headers) {
 		var col []string
 		for _, row := range result.Rows {
 			col = append(col, row[i])
 		}
-		report, err = analyseStringField(result.Headers[i].Name, col)
-		if err != nil {
-			return "", err
-		}
+		header := result.Headers[i]
+		analysisField(header.Name, col, writer)
 	}
 
-	return report, nil
 }
 
-func analyseStringField(header string, column []string) (string, error) {
-	runeMap := make(map[rune]int)
+func analysisField(header string, column []string, writer io.Writer) {
+	fmt.Fprintf(writer, "-- Field: `%s` -- \n", header)
+
 	valueMap := make(map[string]int)
 	for _, str := range column {
-		for _, rune := range str {
-			runeMap[rune]++
-		}
 		valueMap[str]++
 	}
 
-	valuesArr := utils.SortMap(valueMap, -1)
-	values := "row: value -> count\n"
-	for i, v := range valuesArr {
-		values += fmt.Sprintf("%d: %v -> %d\n", i, v.X, v.Y)
+	fmt.Fprintf(writer, "Count: %d\nUnique Count: %d\n\n", len(column), len(valueMap))
+	fmt.Fprintln(writer, "Value Occurrence")
+
+	i := 0
+	// mostly unique values, just sample 10
+	if len(valueMap) >= len(column)>>1 {
+		fmt.Fprintln(writer, "MOSTLY UNIQUE VALUES JUST SHOWING SAMPLE OF 10")
+		fmt.Fprintln(writer, "row: value -> count")
+		for k, v := range valueMap {
+			if i > 10 {
+				break
+			}
+			fmt.Fprintf(writer, "%d: %v -> %d\n", i, k, v)
+			i++
+		}
+	} else {
+		fmt.Fprintln(writer, "row: value -> count")
+		for k, v := range valueMap {
+			fmt.Fprintf(writer, "%d: %v -> %d\n", i, k, v)
+			i++
+		}
 	}
-	var valueLengths []int
+	fmt.Fprintln(writer)
+
+	fmt.Fprint(writer, "Value Summary - String Lengths\n")
+	fmt.Fprintf(writer, "%s\n\n", utils.Summarise(valueMap))
+
+	runeMap := make(map[rune]int)
 	for k := range maps.Keys(valueMap) {
-		valueLengths = append(valueLengths, len(k))
+		for _, r := range k {
+			runeMap[r]++
+		}
 	}
 
-	runesArr := utils.SortMap(runeMap, -1)
 	runes := "row: rune -> count\n"
-	for i, v := range runesArr {
-		runes += fmt.Sprintf("%d: %v -> %d\n", i, string(v.X), v.Y)
+	leading := int(math.Ceil(math.Log10(float64(len(runeMap)))))
+
+	i = 0
+	for k, v := range runeMap {
+		runes += fmt.Sprintf(
+			"%0*d: %[3]q (unicode: %[3]U) (UTF-8: %[3]d) -> %[4]d\n",
+			leading, i, k, v,
+		)
+		i++
 	}
 
-	analysis := fmt.Sprintf("Field: %s\n", header)
-	analysis += fmt.Sprintf("Value Occurrence\n%s\n", values)
-	analysis += fmt.Sprint("Value Summary\n")
-	analysis += fmt.Sprintf("%s\n\n", utils.Summarise(valueLengths))
-	analysis += fmt.Sprintf("Char Occurrence\n%s", runes)
-
-	return analysis, nil
+	fmt.Fprintf(writer, "Char Occurrence\n%s\n", runes)
+	fmt.Fprintf(writer, "Char Analysis\n%s\n\n", utils.AnalyseRunes(runeMap))
 }

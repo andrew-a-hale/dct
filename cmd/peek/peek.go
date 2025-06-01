@@ -45,7 +45,7 @@ var PeekCmd = &cobra.Command{
 		}
 
 		if lines < 1 {
-			log.Printf("Error: expected -n to be at least 1 defaulting to %v\n", defaultLines)
+			log.Printf("Warning: expected -n to be at least 1 defaulting to %v\n", defaultLines)
 			lines = defaultLines
 		}
 

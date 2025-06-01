@@ -5,6 +5,7 @@ const (
 	JSON    = ".json"
 	NDJSON  = ".ndjson"
 	PARQUET = ".parquet"
+	INVALID_FILE = "invalid"
 )
 
 var PEEK_SUPPORTED_FILETYPES = []string{CSV, JSON, NDJSON, PARQUET}

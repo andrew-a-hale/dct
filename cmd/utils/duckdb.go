@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -114,6 +115,18 @@ func Query(query string) (Result, error) {
 					b := x.Value.String()
 					sb := b[:x.Scale] + "." + b[x.Scale:]
 					tmp = append(tmp, string(sb))
+				} else if x, ok := (*s).([]any); ok { // json array
+					j, err := json.Marshal(x)
+					if err != nil {
+						return Result{}, err
+					}
+					tmp = append(tmp, string(j))
+				} else if x, ok := (*s).(map[string]any); ok { // json object
+					j, err := json.Marshal(x)
+					if err != nil {
+						return Result{}, err
+					}
+					tmp = append(tmp, string(j))
 				} else {
 					err := fmt.Errorf("type `%v` not implemented yet", reflect.TypeOf(*s))
 					return Result{}, err

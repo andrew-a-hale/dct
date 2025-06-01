@@ -11,6 +11,7 @@ DCT provides a collection of command-line utilities for working with CSV, JSON, 
 - **Chart**: Generate simple visualisations from data files
 - **Generator**: Generate synthetic data with customisable schemas
 - **Flattify**: Convert nested JSON structures to flat formats or SQL
+- **Prof**: Profile data files for values and characters
 
 ## Commands
 
@@ -104,5 +105,21 @@ dct flattify <file> [options]
 
 Example
 dct flattify -s examples/flattify.ndjson
-dct flattify examples/flattify.ndjson
+dct flattify examples/faker-comp.json
+dct flattify "{\"a\": {\"b\": 1}}"
+dct flattify -s "{\"a\": {\"b\": 1}, \"0\": [0, 2]}"
+```
+
+### Profile
+
+Provide summaries for data files.
+
+```bash
+dct prof <file> [options]
+  -o, --output <file>    Output to file
+
+Example
+dct prof examples/flattify.ndjson
+dct prof examples/faker-comp.json -o report.txt
+dct prof examples/messy.csv
 ```

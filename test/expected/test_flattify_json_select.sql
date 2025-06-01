@@ -14,4 +14,3 @@ select
 	, values[4].b::decimal
 	, values[5].a::decimal
 	, values[5].b::decimal
-from 'test/resources/flattify.ndjson';

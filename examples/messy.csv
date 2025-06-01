@@ -1,0 +1,14 @@
+"ID","Name","Description","Notes"
+1,"Normal Name","Simple description","No issues here"
+2,"Name, With, Commas","Contains , commas","Should be quoted"
+3,"Name ""With"" Quotes","Contains ""double quotes""","Quotes should be escaped"
+4,"Name
+With
+Newlines","Contains
+line breaks","Multiline field"
+5,"Name\tWith\tTabs","Contains\ttabs","Tab characters"
+6,"Unicode: ✓, ❤, 𝄞","Special chars: \/, \\, |","Backslashes and pipes"
+7,"",,"Empty fields"
+8,"Null \0 Byte","Contains \0 null","Can break C-style parsers"
+9,"Injection=1+1;DROP TABLE users;","SQL Injection attempt","Malicious input"
+10,"Emoji: 😊, 🤔, 🚀","Non-ASCII chars","UTF-8 handling"

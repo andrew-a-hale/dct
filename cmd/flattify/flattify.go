@@ -1,11 +1,13 @@
 package flattify
 
 import (
-	"bufio"
+	"bytes"
 	"dct/cmd/utils"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"maps"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/spf13/cobra"
 )
@@ -29,16 +32,16 @@ var (
 
 func init() {
 	FlattifyCmd.Flags().StringVarP(&output, "output", "o", "", "Output file path (default: stdout)")
-	FlattifyCmd.Flags().BoolVarP(&sql, "sql", "s", false, "Generate DuckDB-compatible SQL statement")
+	FlattifyCmd.Flags().BoolVarP(&sql, "sql", "s", false, "Generate DuckDB-compatible SQL statement select clause")
 }
 
 var FlattifyCmd = &cobra.Command{
-	Use:   "flattify [FILE]",
+	Use:   "flattify [FILE or JSON]",
 	Short: "Convert nested JSON to flat structure",
 	Long:  `Recursively unnest JSON structures to a single layer, with optional SQL output for database use`,
 	Args:  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		file, ext := parseFileArg(args)
+		payload, ext := parseJsonArgs(args)
 
 		var err error
 		writer = defaultWriter
@@ -51,31 +54,63 @@ var FlattifyCmd = &cobra.Command{
 
 		switch {
 		case ext == utils.JSON && sql:
-			flattify(file, writer, writeSelectStatement)
+			flattify(payload, writer, writeSelectStatement)
 		case ext == utils.NDJSON && sql:
-			flattifyLines(file, writer, writeMergedSelectStatement)
+			flattifyLines(payload, writer, writeMergedSelectStatement)
 		case ext == utils.JSON && !sql:
-			flattify(file, writer, writeJsonLine)
+			flattify(payload, writer, writeJson)
 		case ext == utils.NDJSON && !sql:
-			flattifyLines(file, writer, writeJsonLines)
+			flattifyLines(payload, writer, writeJsonLines)
 		}
 	},
 }
 
-func parseFileArg(args []string) (string, string) {
+func parseJsonArgs(args []string) ([][]byte, string) {
 	if len(args) != 1 {
 		log.Fatalf("Error: expected 1 arg: %v\n", args)
 	}
 
-	filepath := args[0]
-	file := path.Base(filepath)
-	fileext := strings.ToLower(path.Ext(file))
+	rawJson := []byte(args[0])
+	if fs.ValidPath(args[0]) && !json.Valid([]byte(args[0])) {
+		filepath := args[0]
+		file := path.Base(filepath)
+		fileext := strings.ToLower(path.Ext(file))
 
-	if slices.Contains(utils.FLATTIFY_SUPPORTED_FILETYPES, fileext) {
-		return filepath, fileext
+		f, err := os.Open(filepath)
+		if err != nil {
+			log.Fatalf("failed to open file: %v", err)
+		}
+		defer f.Close()
+
+		utils.Assert(
+			slices.Contains(utils.FLATTIFY_SUPPORTED_FILETYPES, fileext),
+			"unsupported file type: "+fileext,
+		)
+
+		rawJson, err = io.ReadAll(f)
+		if err != nil {
+			log.Fatalf("failed to read file: %v", err)
+		}
 	}
 
-	return "", ""
+	var lines [][]byte
+	var jsonType string
+	jsonType, err := detectJsonType(rawJson)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	switch jsonType {
+	case utils.JSON:
+		lines = append(lines, rawJson)
+	case utils.NDJSON:
+		jsonlines := bytes.Split(rawJson, []byte("\n"))
+		for _, line := range jsonlines {
+			lines = append(lines, line)
+		}
+	}
+
+	return lines, jsonType
 }
 
 func flattifyJson(obj any) []Tuple {
@@ -110,51 +145,24 @@ func flattifyJson(obj any) []Tuple {
 	return res
 }
 
-func flattify(file string, writer io.Writer, writerFunc func(any, string, io.Writer)) {
-	f, err := os.Open(file)
-	if err != nil {
-		log.Fatalf("failed to open file: %v", err)
-	}
-	defer f.Close()
-
-	content, err := io.ReadAll(f)
-	if err != nil {
-		log.Fatalf("failed to read file: %v", err)
-	}
-
+func flattify(payload [][]byte, writer io.Writer, writerFunc func(any, io.Writer)) {
 	var j any
-	err = json.Unmarshal(content, &j)
-	if err != nil {
-		log.Fatalf("failed to marshal json: %v", err)
-	}
-
+	json.Unmarshal(payload[0], &j)
 	obj := flattifyJson(j)
-	writerFunc(obj, file, writer)
+	writerFunc(obj, writer)
 }
 
-func flattifyLines(file string, writer io.Writer, writerFunc func(any, string, io.Writer)) {
-	f, err := os.Open(file)
-	if err != nil {
-		log.Fatalf("failed to open file: %v", err)
-	}
-	defer f.Close()
-
+func flattifyLines(payload [][]byte, writer io.Writer, writerFunc func(any, io.Writer)) {
 	var lines [][]Tuple
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
+	for _, line := range payload {
 		var j any
-		err = json.Unmarshal([]byte(scanner.Text()), &j)
-		if err != nil {
-			log.Fatalf("failed to marshal json: %v", err)
-		}
-
+		json.Unmarshal(line, &j)
 		lines = append(lines, flattifyJson(j))
 	}
-
-	writerFunc(lines, file, writer)
+	writerFunc(lines, writer)
 }
 
-func writeJsonLine(line any, _ string, writer io.Writer) {
+func writeJson(line any, writer io.Writer) {
 	fmt.Fprint(writer, "{")
 	for i, v := range line.([]Tuple) {
 		k := v[0]
@@ -176,7 +184,7 @@ func writeJsonLine(line any, _ string, writer io.Writer) {
 	fmt.Fprint(writer, "}\n")
 }
 
-func writeJsonLines(lines any, _ string, writer io.Writer) {
+func writeJsonLines(lines any, writer io.Writer) {
 	for _, line := range lines.([][]Tuple) {
 		fmt.Fprint(writer, "{")
 		for i, v := range line {
@@ -200,18 +208,31 @@ func writeJsonLines(lines any, _ string, writer io.Writer) {
 	}
 }
 
-func writeSelectStatement(line any, file string, writer io.Writer) {
+func writeSelectStatement(line any, writer io.Writer) {
+	re := regexp.MustCompile(`\.?(\d+)`)
+
 	fmt.Fprint(writer, "select\n")
 	paths := make(map[string]string)
 	for _, v := range line.([]Tuple) {
+		key, ok := v[0].(string)
+		if !ok {
+			log.Fatalf("failed to create merged select statement: %v", v[0])
+		}
+
+		var path string
+		if unicode.IsNumber(rune(key[0])) {
+			path += "json"
+		}
+
+		path += string(re.ReplaceAll([]byte(key), []byte("[$1]")))
 		switch v[1].(type) {
 		case nil:
 		case string:
-			paths[v[0].(string)] = "varchar"
+			paths[path] = "varchar"
 		case float64:
-			paths[v[0].(string)] = "decimal"
+			paths[path] = "decimal"
 		case bool:
-			paths[v[0].(string)] = "bool"
+			paths[path] = "bool"
 		}
 	}
 
@@ -230,11 +251,11 @@ func writeSelectStatement(line any, file string, writer io.Writer) {
 		}
 		fmt.Fprint(writer, "\n")
 	}
-
-	fmt.Fprintf(writer, "from '%s';\n", file)
 }
 
-func writeMergedSelectStatement(lines any, file string, writer io.Writer) {
+func writeMergedSelectStatement(lines any, writer io.Writer) {
+	re := regexp.MustCompile(`\.?(\d+)`)
+
 	paths := make(map[string]string)
 	for _, line := range lines.([][]Tuple) {
 		for _, v := range line {
@@ -243,8 +264,15 @@ func writeMergedSelectStatement(lines any, file string, writer io.Writer) {
 				log.Fatalf("failed to create merged select statement: %v", v[0])
 			}
 
-			re := regexp.MustCompile(`.(\d+)`)
-			path := string(re.ReplaceAll([]byte(key), []byte("[$1]")))
+			var path string
+
+			// edge case where key in top layer is an integer
+			if unicode.IsNumber(rune(key[0])) {
+				path += fmt.Sprintf(`json."%s"`, key[:strings.Index(key, ".")])
+				key = key[strings.Index(key, "."):]
+			}
+
+			path += string(re.ReplaceAll([]byte(key), []byte("[$1]")))
 			switch v[1].(type) {
 			case nil:
 			case string:
@@ -273,6 +301,30 @@ func writeMergedSelectStatement(lines any, file string, writer io.Writer) {
 		}
 		fmt.Fprint(writer, "\n")
 	}
+}
 
-	fmt.Fprintf(writer, "from '%s';\n", file)
+func detectJsonType(content []byte) (string, error) {
+	lines := bytes.Split(content, []byte("\n"))
+	for _, line := range lines {
+		_, ok := bytes.CutPrefix(line, []byte("{"))
+		if !ok && json.Valid(content) {
+			return utils.JSON, nil
+		}
+		_, ok = bytes.CutSuffix(line, []byte("}"))
+		if !ok && json.Valid(content) {
+			return utils.JSON, nil
+		}
+		_, ok = bytes.CutSuffix(line, []byte(","))
+		if ok && json.Valid(content) {
+			return utils.JSON, nil
+		}
+	}
+
+	for _, line := range lines {
+		if !json.Valid(line) {
+			return "", errors.New("invalid json")
+		}
+	}
+
+	return utils.NDJSON, nil
 }

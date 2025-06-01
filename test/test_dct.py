@@ -280,7 +280,7 @@ def test_generator():
     assert header == expected_header
 
 
-def test_flattify():
+def test_flattify_ndjson():
     out = subprocess.run(
         [
             "./dct",
@@ -293,8 +293,65 @@ def test_flattify():
     # map isn't sorted
     assert out.stderr == b""
 
+def test_flattify_json_file():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "test/resources/flattify.json",
+        ],
+        capture_output=True,
+    )
 
-def test_flattify_select():
+    # map isn't sorted
+    assert out.stderr == b""
+    
+def test_flattify_json():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            """{
+                "a": 1,
+                "b": {
+                    "a": 1
+                }
+            }"""
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+
+def test_flattify_json_array():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            """[ 1, 2 ]"""
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+
+def test_flattify_json_object_digit_key():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            """{"0": [ 1, 2 ]}"""
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+
+
+def test_flattify_ndjson_select():
     out = subprocess.run(
         [
             "./dct",
@@ -306,7 +363,21 @@ def test_flattify_select():
     )
 
     assert out.stderr == b""
-    assert out.stdout == open("./test/expected/test_flattify_select.sql", mode="rb").read()
+    assert out.stdout == open("./test/expected/test_flattify_ndjson_select.sql", mode="rb").read()
+
+def test_flattify_json_select():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "-s",
+            "test/resources/flattify.json",
+        ],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_flattify_json_select.sql", mode="rb").read()
 
 
 @pytest.mark.parametrize("filetype", PROFILE_SUPPORTED_FILE_TYPES)
@@ -316,4 +387,6 @@ def test_prof(filetype: str):
         capture_output=True,
     )
 
-    assert out.stdout == open("./test/expected/test_peek_default.txt", mode="rb").read()
+    # output is not ordered!
+    assert out.stderr == b""
+    assert out.stdout != b""
