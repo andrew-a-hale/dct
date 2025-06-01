@@ -77,13 +77,13 @@ func analyse(result utils.Result, writer io.Writer) {
 		for _, row := range result.Rows {
 			col = append(col, row[i])
 		}
-		header := result.Headers[i]
-		analysisField(header.Name, col, writer)
+		// writes directly to ouput
+		analyseField(result.Headers[i].Name, col, writer)
 	}
 
 }
 
-func analysisField(header string, column []string, writer io.Writer) {
+func analyseField(header string, column []string, writer io.Writer) {
 	fmt.Fprintf(writer, "-- Field: `%s` -- \n", header)
 
 	valueMap := make(map[string]int)
@@ -116,7 +116,7 @@ func analysisField(header string, column []string, writer io.Writer) {
 	fmt.Fprintln(writer)
 
 	fmt.Fprint(writer, "Value Summary - String Lengths\n")
-	fmt.Fprintf(writer, "%s\n\n", utils.Summarise(valueMap))
+	fmt.Fprintf(writer, "%s\n\n", Summarise(valueMap))
 
 	runeMap := make(map[rune]int)
 	for k := range maps.Keys(valueMap) {
@@ -131,12 +131,12 @@ func analysisField(header string, column []string, writer io.Writer) {
 	i = 0
 	for k, v := range runeMap {
 		runes += fmt.Sprintf(
-			"%0*d: %[3]q (unicode: %[3]U) (UTF-8: %[3]d) -> %[4]d\n",
+			"%0*d: %[3]q (hex: %[3]U) (dec: %[3]d) -> %[4]d\n",
 			leading, i, k, v,
 		)
 		i++
 	}
 
 	fmt.Fprintf(writer, "Char Occurrence\n%s\n", runes)
-	fmt.Fprintf(writer, "Char Analysis\n%s\n\n", utils.AnalyseRunes(runeMap))
+	fmt.Fprintf(writer, "Char Analysis\n%s\n\n", AnalyseRunes(runeMap))
 }

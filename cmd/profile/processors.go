@@ -1,6 +1,7 @@
-package utils
+package profile
 
 import (
+	"dct/cmd/utils"
 	"fmt"
 	"math"
 	"sort"
@@ -54,8 +55,8 @@ func Summarise(m map[string]int) Summary {
 		}
 	}
 
-	Assert(summary.Min < math.MaxInt, "error finding min string length")
-	Assert(summary.Max > math.MinInt, "error finding max string length")
+	utils.Assert(summary.Min < math.MaxInt, "error finding min string length")
+	utils.Assert(summary.Max > math.MinInt, "error finding max string length")
 
 	summary.Mean = float64(summary.Sum) / float64(summary.Count)
 
