@@ -24,8 +24,6 @@ const (
 	BOOL   = "bool"
 )
 
-var CACHE map[string]string = make(map[string]string)
-
 func ParseField[T Field](raw []byte) *T {
 	var parsedField *T
 	err := json.Unmarshal(raw, &parsedField)

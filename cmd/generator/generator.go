@@ -16,6 +16,7 @@ var (
 	lines     int
 	format    string
 	outfile   string
+	CACHE     map[string]string = make(map[string]string)
 )
 
 func init() {
