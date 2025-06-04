@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"reflect"
 	"strconv"
 
@@ -23,36 +22,8 @@ type DerivedField struct {
 }
 
 var env = map[string]any{
-	"power": func(a string, b int) string {
-		x, _ := strconv.ParseFloat(a, 64)
-		return fmt.Sprintf("%v", math.Pow(x, float64(b)))
-	},
-	"divide": func(a string, b string) string {
-		x, _ := strconv.ParseFloat(a, 64)
-		y, _ := strconv.ParseFloat(b, 64)
-		return fmt.Sprintf("%v", x/y)
-	},
-	"plus": func(a string, b string) string {
-		x, _ := strconv.ParseFloat(a, 64)
-		y, _ := strconv.ParseFloat(b, 64)
-		return fmt.Sprintf("%v", x+y)
-	},
 	"concat": func(a string, b string) string {
 		return fmt.Sprintf("%s%s", a, b)
-	},
-	"minus": func(a string, b string) string {
-		x, _ := strconv.ParseFloat(a, 64)
-		y, _ := strconv.ParseFloat(b, 64)
-		return fmt.Sprintf("%v", x-y)
-	},
-	"mult": func(a string, b string) string {
-		x, _ := strconv.ParseFloat(a, 64)
-		y, _ := strconv.ParseFloat(b, 64)
-		return fmt.Sprintf("%v", x*y)
-	},
-	"mod": func(a string, b int) string {
-		x, _ := strconv.Atoi(a)
-		return fmt.Sprintf("%v", x%b)
 	},
 }
 
@@ -67,21 +38,35 @@ func (s DerivedField) Generate(ctx context.Context) string {
 
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
-		env[k] = CACHE[field.GetName()]
+		cacheValue := CACHE[field.GetName()]
+		var value any
+		var err error
+		switch field.GetType() {
+		case BOOL:
+			value, err = strconv.ParseBool(cacheValue)
+		case INT:
+			value, err = strconv.Atoi(cacheValue)
+		case FLOAT:
+			value, err = strconv.ParseFloat(cacheValue, 32)
+		case STRING:
+			value = CACHE[field.GetName()]
+		default:
+			log.Fatal("unimplemented type used in derived field")
+		}
+
+		if err != nil {
+			log.Fatalf("failed to parse value `%v`: %v", cacheValue, err)
+		}
+
+		env[k] = value
 	}
 
 	program, err := expr.Compile(
 		s.Config.Expression,
 		expr.Env(env),
-		expr.Operator("+", "plus"),
-		expr.Operator("-", "minus"),
-		expr.Operator("*", "mult"),
-		expr.Operator("%", "mod"),
-		expr.Operator("/", "divide"),
-		expr.Operator("^", "power"),
-		expr.Operator("**", "power"),
 		expr.Operator("||", "concat"),
 	)
+
 	if err != nil {
 		log.Fatalf(
 			"failed to execute expression `%s` for field %s: %v",

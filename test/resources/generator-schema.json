@@ -94,7 +94,7 @@
         "weight",
         "height"
       ],
-      "expression": "weight + height ^ 2 - weight / height * (weight % 200) ** 5"
+      "expression": "weight + height ^ 2 - weight / height * (int(weight) % 200) ** 5"
     }
   },
   {

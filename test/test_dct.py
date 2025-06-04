@@ -275,6 +275,7 @@ def test_generator():
     header = out.stdout.decode().splitlines()[0]
     expected_header = open("test/expected/test_generator.csv", mode="r").read().strip()
     assert header == expected_header
+    assert out.stderr == b""
 
 
 def test_flattify_ndjson():

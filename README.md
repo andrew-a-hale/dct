@@ -112,9 +112,7 @@ CALEB,MOORE,GROUP 1 AUTOMOTIVE,DIANA.TORRES@W.W.GRAINGER.com,58402680
 
 #### DSL For Derived Fields
 
-- Strings: `||` (concat)
-- Floats: `+`, `*`, `/`, `^`, `-`
-- Ints: `+`, `*`, `/`, `^`, `-`, `%`
+See ![here](https://expr-lang.org/docs/language-definition) for DSL specification for schema.
 
 ### Flattify
 

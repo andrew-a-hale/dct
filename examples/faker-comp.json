@@ -17,7 +17,15 @@
   {
     "data_type": "string",
     "field": "email",
-    "source": "emails"
+    "source": "derived",
+    "config": {
+      "fields": [
+        "first_name",
+        "last_name",
+        "company"
+      ],
+      "expression": "first_name || '.' || last_name || '@' || replace(company, ' ', '') || '.com'"
+    }
   },
   {
     "data_type": "int",
