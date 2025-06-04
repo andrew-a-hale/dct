@@ -24,6 +24,8 @@ const (
 	BOOL   = "bool"
 )
 
+var CACHE map[string]string = make(map[string]string)
+
 func ParseField[T Field](raw []byte) *T {
 	var parsedField *T
 	err := json.Unmarshal(raw, &parsedField)
@@ -70,6 +72,8 @@ func parseSchema(rawSchema string) Schema {
 		}
 
 		switch reflectedSource.Interface() {
+		case "randomBool":
+			parsedFields = append(parsedFields, ParseField[RandomBoolField](j))
 		case "randomAscii":
 			parsedFields = append(parsedFields, ParseField[RandomAsciiField](j))
 		case "randomUniformInt":
@@ -103,9 +107,37 @@ func parseSchema(rawSchema string) Schema {
 }
 
 type Field interface {
-	Generate(ctx context.Context) string
+	Generate(context.Context) string
 	GetType() string
 	GetName() string
+}
+
+type RandomBoolField struct {
+	Field    string `json:"field"`
+	Source   string `json:"source"`
+	DataType string `json:"data_type"`
+}
+
+// randomly generated ascii string with chars from 33-126
+func (s RandomBoolField) Generate(ctx context.Context) string {
+	var value string
+	if rand.Float32() > 0.5 {
+		value = "true"
+	} else {
+		value = "false"
+	}
+
+	CACHE[s.Field] = value
+
+	return value
+}
+
+func (s RandomBoolField) GetType() string {
+	return s.DataType
+}
+
+func (s RandomBoolField) GetName() string {
+	return s.Field
 }
 
 type RandomAsciiField struct {
@@ -119,11 +151,14 @@ type RandomAsciiField struct {
 
 // randomly generated ascii string with chars from 33-126
 func (s RandomAsciiField) Generate(ctx context.Context) string {
-	var sb string
+	var value string
 	for range s.Config.Length {
-		sb += string(uint8(rand.IntN(93) + 33))
+		value += string(uint8(rand.IntN(93) + 33))
 	}
-	return sb
+
+	CACHE[s.Field] = value
+
+	return value
 }
 
 func (s RandomAsciiField) GetType() string {
@@ -145,8 +180,9 @@ type RandomUniformIntField struct {
 }
 
 func (s RandomUniformIntField) Generate(ctx context.Context) string {
-	v := strconv.Itoa(rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min)
-	return v
+	value := strconv.Itoa(rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min)
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s RandomUniformIntField) GetType() string {
@@ -170,7 +206,9 @@ type RandomNormalField struct {
 
 func (s RandomNormalField) Generate(ctx context.Context) string {
 	format := fmt.Sprintf("%%0.%df", s.Config.Decimals)
-	return fmt.Sprintf(format, rand.NormFloat64()*s.Config.Std+s.Config.Mean)
+	value := fmt.Sprintf(format, rand.NormFloat64()*s.Config.Std+s.Config.Mean)
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s RandomNormalField) GetType() string {
@@ -191,7 +229,9 @@ type RandomPoissonField struct {
 }
 
 func (s RandomPoissonField) Generate(ctx context.Context) string {
-	return strconv.Itoa(generatePoisson(s.Config.Lambda))
+	value := strconv.Itoa(generatePoisson(s.Config.Lambda))
+	CACHE[s.Field] = value
+	return value
 }
 
 func generatePoisson(lambda int) int {
@@ -222,7 +262,9 @@ type LastNameField struct {
 }
 
 func (s LastNameField) Generate(ctx context.Context) string {
-	return sources.LastNames[rand.IntN(len(sources.LastNames))]
+	value := sources.LastNames[rand.IntN(len(sources.LastNames))]
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s LastNameField) GetType() string {
@@ -240,7 +282,9 @@ type FirstNameField struct {
 }
 
 func (s FirstNameField) Generate(ctx context.Context) string {
-	return sources.FirstNames[rand.IntN(len(sources.FirstNames))]
+	value := sources.FirstNames[rand.IntN(len(sources.FirstNames))]
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s FirstNameField) GetType() string {
@@ -303,7 +347,9 @@ func (s RandomDatetimeField) Generate(ctx context.Context) string {
 		ub = parsedDtMax.Unix()
 	}
 
-	return time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc).Format(time.RFC3339)
+	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc).Format(time.RFC3339)
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s RandomDatetimeField) GetType() string {
@@ -361,7 +407,9 @@ func (s RandomDateField) Generate(ctx context.Context) string {
 		ub = parsedDtMax.Unix()
 	}
 
-	return time.Unix(rand.Int64N(ub-lb)+lb, 0).Format(time.DateOnly)
+	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).Format(time.DateOnly)
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s RandomDateField) GetType() string {
@@ -425,7 +473,9 @@ func (s RandomTimeField) Generate(ctx context.Context) string {
 		ub = parsedDtMax.Unix()
 	}
 
-	return time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC).Format(time.TimeOnly)
+	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC).Format(time.TimeOnly)
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s RandomTimeField) GetType() string {
@@ -443,7 +493,9 @@ type UuidField struct {
 }
 
 func (s UuidField) Generate(ctx context.Context) string {
-	return uuid.NewString()
+	value := uuid.NewString()
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s UuidField) GetType() string {
@@ -461,11 +513,13 @@ type EmailField struct {
 }
 
 func (s EmailField) Generate(ctx context.Context) string {
-	return sources.Emails[rand.IntN(len(sources.Emails))]
+	value := sources.Emails[rand.IntN(len(sources.Emails))]
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s EmailField) GetType() string {
-	return "string"
+	return s.DataType
 }
 
 func (s EmailField) GetName() string {
@@ -476,10 +530,13 @@ type CompanyField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
+	Value    string
 }
 
 func (s CompanyField) Generate(ctx context.Context) string {
-	return sources.Companies[rand.IntN(len(sources.Companies))]
+	value := sources.Companies[rand.IntN(len(sources.Companies))]
+	CACHE[s.Field] = value
+	return value
 }
 
 func (s CompanyField) GetType() string {

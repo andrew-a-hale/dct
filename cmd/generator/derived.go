@@ -15,6 +15,7 @@ type DerivedField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
+	Value    string
 	Config   struct {
 		Expression string   `json:"expression"`
 		Fields     []string `json:"fields"`
@@ -66,7 +67,7 @@ func (s DerivedField) Generate(ctx context.Context) string {
 
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
-		env[k] = field.Generate(ctx)
+		env[k] = CACHE[field.GetName()]
 	}
 
 	program, err := expr.Compile(
@@ -82,7 +83,10 @@ func (s DerivedField) Generate(ctx context.Context) string {
 		expr.Operator("||", "concat"),
 	)
 	if err != nil {
-		log.Fatalf("failed to execute expression `%s` for field %s: %v", s.Config.Expression, s.Source, err)
+		log.Fatalf(
+			"failed to execute expression `%s` for field %s: %v",
+			s.Config.Expression, s.Source, err,
+		)
 	}
 
 	o, _ := expr.Run(program, env)

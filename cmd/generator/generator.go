@@ -14,12 +14,14 @@ import (
 var (
 	rawSchema string
 	lines     int
+	format    string
 	outfile   string
 )
 
 func init() {
 	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "Output file path (default: stdout)")
-	GenCmd.Flags().IntVarP(&lines, "lines", "n", 0, "Number of data rows to generate")
+	GenCmd.Flags().StringVarP(&format, "format", "f", "csv", "Output format")
+	GenCmd.Flags().IntVarP(&lines, "lines", "n", 1, "Number of data rows to generate")
 }
 
 type (
@@ -29,6 +31,7 @@ type (
 )
 
 const (
+	FORMAT_KEY    ctxKey = "format"
 	SCHEMA_KEY    ctxKey = "schema"
 	FIELD_MAP_KEY ctxKey = "fieldMap"
 )
@@ -58,11 +61,10 @@ var GenCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
+		ctx = context.WithValue(ctx, FORMAT_KEY, "."+format)
 		ctx = context.WithValue(ctx, SCHEMA_KEY, schema)
 		ctx = context.WithValue(ctx, FIELD_MAP_KEY, fieldMap)
-		for i := range lines {
-			Write(ctx, out, i)
-		}
+		Write(ctx, out, lines)
 	},
 }
 

@@ -1,11 +1,6 @@
 [
   {
     "data_type": "string",
-    "field": "id",
-    "source": "uuid"
-  },
-  {
-    "data_type": "string",
     "field": "first_name",
     "source": "firstNames"
   },

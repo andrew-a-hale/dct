@@ -123,5 +123,10 @@
       "min": "02:00:00",
       "max": "10:00:00"
     }
+  },
+  {
+    "data_type": "bool",
+    "field": "awake",
+    "source": "randomBool"
   }
 ]

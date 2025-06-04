@@ -1,11 +1,11 @@
 package utils
 
 const (
-	CSV     = ".csv"
-	JSON    = ".json"
-	NDJSON  = ".ndjson"
-	PARQUET = ".parquet"
-	INVALID_FILE = "invalid"
+	CSV          string = ".csv"
+	JSON         string = ".json"
+	NDJSON       string = ".ndjson"
+	PARQUET      string = ".parquet"
+	INVALID_FILE string = "invalid"
 )
 
 var PEEK_SUPPORTED_FILETYPES = []string{CSV, JSON, NDJSON, PARQUET}

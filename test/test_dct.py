@@ -266,9 +266,6 @@ def test_generator():
         [
             "./dct",
             "gen",
-            "-n",
-            "1",
-            "-s",
             "test/resources/generator-schema.json",
         ],
         capture_output=True
