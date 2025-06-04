@@ -90,9 +90,9 @@ dct gen -n 20000 -s "[ { \"data_type\": \"string\", \"field\": \"id\", \"source\
 
 #### DSL For Derived Fields
 
-- Strings: ||
-- Floats: +, *, /, ^, -
-- Ints: +, *, /, ^, -, %
+- Strings: `||` (concat)
+- Floats: `+`, `*`, `/`, `^`, `-`
+- Ints: `+`, `*`, `/`, `^`, `-`, `%`
 
 ### Flattify
 
