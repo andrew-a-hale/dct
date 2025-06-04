@@ -22,7 +22,7 @@ Some examples are available in the `examples/` directory to use with `dct`.
 Preview file contents:
 
 ```bash
-dct peek <file> [options]
+dct peek <file> [flags]
   -o, --output <file>    Output to file (default: stdout)
   -n, --lines <number>   Number of lines to display
 
@@ -36,7 +36,7 @@ dct peek examples/left.csv -n 10
 Compare two files with key matching and metrics:
 
 ```bash
-dct diff <keys> <file1> <file2> [options]
+dct diff <keys> <file1> <file2> [flags]
   -o, --output <file>    Output to file (default: stdout)
   -m, --metrics <spec>   Metrics specification
   -a, --all              Show all metrics
@@ -75,12 +75,11 @@ dct chart examples/chart.csv 1 count
 Generate synthetic data:
 
 ```bash
-dct gen -s [schema] -n [lines] -o [outfile] [flags]
+dct gen <schema json file or json> [flags]
 
 Flags:
   -n, --lines int        Number of data rows to generate
   -o, --outfile string   Output file path (default: stdout)
-  -s, --schema string    Schema definition file path
 
 Examples
 dct gen -n 200 -s examples/generator-schema.json
@@ -99,7 +98,7 @@ dct gen -n 20000 -s "[ { \"data_type\": \"string\", \"field\": \"id\", \"source\
 Convert nested JSON to flat formats:
 
 ```bash
-dct flattify <file> [options]
+dct flattify <json file or json> [flags]
   -s, --sql              Create DuckDB-compliant SQL statement
   -o, --output <file>    Output to file
 
@@ -115,7 +114,7 @@ dct flattify -s "{\"a\": {\"b\": 1}, \"0\": [0, 2]}"
 Provide summaries for data files:
 
 ```bash
-dct prof <file> [options]
+dct prof <file> [flags]
   -o, --output <file>    Output to file
 
 Examples
