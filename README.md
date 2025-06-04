@@ -103,7 +103,7 @@ dct flattify <file> [options]
   -s, --sql              Create DuckDB-compliant SQL statement
   -o, --output <file>    Output to file
 
-Example
+Examples
 dct flattify -s examples/flattify.ndjson
 dct flattify examples/faker-comp.json
 dct flattify "{\"a\": {\"b\": 1}}"
@@ -112,13 +112,13 @@ dct flattify -s "{\"a\": {\"b\": 1}, \"0\": [0, 2]}"
 
 ### Profile
 
-Provide summaries for data files.
+Provide summaries for data files:
 
 ```bash
 dct prof <file> [options]
   -o, --output <file>    Output to file
 
-Example
+Examples
 dct prof examples/flattify.ndjson
 dct prof examples/faker-comp.json -o report.txt
 dct prof examples/messy.csv
