@@ -24,7 +24,7 @@
         "last_name",
         "company"
       ],
-      "expression": "first_name || '.' || last_name || '@' || replace(company, ' ', '') || '.com'"
+      "expression": "first_name || '.' || last_name || '@' || replace(company, ' ', '') || '.COM'"
     }
   },
   {
