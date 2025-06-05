@@ -335,6 +335,21 @@ def test_flattify_json_array():
     # map isn't sorted
     assert out.stderr == b""
 
+def test_flattify_json_array_sql():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "-s",
+            """[ 1, 2 ]"""
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_flattify_json_array.sql", mode="rb").read()
+
 def test_flattify_json_object_digit_key():
     out = subprocess.run(
         [
@@ -347,6 +362,21 @@ def test_flattify_json_object_digit_key():
 
     # map isn't sorted
     assert out.stderr == b""
+
+def test_flattify_json_object_digit_key_sql():
+    out = subprocess.run(
+        [
+            "./dct",
+            "flattify",
+            "-s",
+            """{"0": [ 1, 2 ]}"""
+        ],
+        capture_output=True,
+    )
+
+    # map isn't sorted
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_flattify_json_object_digit_key.sql", mode="rb").read()
 
 
 def test_flattify_ndjson_select():

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"strconv"
 
 	"github.com/expr-lang/expr"
 )
@@ -14,7 +13,6 @@ type DerivedField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
-	Value    string
 	Config   struct {
 		Expression string   `json:"expression"`
 		Fields     []string `json:"fields"`
@@ -27,7 +25,7 @@ var env = map[string]any{
 	},
 }
 
-func (s DerivedField) Generate(ctx context.Context) string {
+func (s DerivedField) Generate(ctx context.Context) any {
 	fieldMap := ctx.Value(FIELD_MAP_KEY).(FieldMap)
 	schema := ctx.Value(SCHEMA_KEY).(Schema)
 	fieldPtrs := make(map[string]reflect.Value)
@@ -38,24 +36,26 @@ func (s DerivedField) Generate(ctx context.Context) string {
 
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
-		cacheValue := CACHE[field.GetName()]
+		cacheValue := cache.GetValue(field.GetName())
 		var value any
-		var err error
-		switch field.GetType() {
-		case BOOL:
-			value, err = strconv.ParseBool(cacheValue)
-		case INT:
-			value, err = strconv.Atoi(cacheValue)
-		case FLOAT:
-			value, err = strconv.ParseFloat(cacheValue, 32)
-		case STRING:
-			value = CACHE[field.GetName()]
+		var ok bool
+		switch cacheValue.(type) {
+		case bool:
+			value, ok = cacheValue.(bool)
+		case int, int32, int64:
+			value, ok = cacheValue.(int)
+		case float32:
+			value, ok = cacheValue.(float32)
+		case float64:
+			value, ok = cacheValue.(float64)
+		case string:
+			value, ok = cacheValue.(string)
 		default:
 			log.Fatal("unimplemented type used in derived field")
 		}
 
-		if err != nil {
-			log.Fatalf("failed to parse value `%v`: %v", cacheValue, err)
+		if !ok {
+			log.Fatalf("failed to parse value `%v`", cacheValue)
 		}
 
 		env[k] = value
@@ -64,7 +64,6 @@ func (s DerivedField) Generate(ctx context.Context) string {
 	program, err := expr.Compile(
 		s.Config.Expression,
 		expr.Env(env),
-		expr.Operator("||", "concat"),
 	)
 
 	if err != nil {
@@ -75,11 +74,7 @@ func (s DerivedField) Generate(ctx context.Context) string {
 	}
 
 	o, _ := expr.Run(program, env)
-	return fmt.Sprintf("%v", o)
-}
-
-func (s DerivedField) GetType() string {
-	return s.DataType
+	return o
 }
 
 func (s DerivedField) GetName() string {

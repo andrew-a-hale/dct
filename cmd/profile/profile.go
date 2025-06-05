@@ -97,7 +97,7 @@ func analyseField(header string, column []string, writer io.Writer) {
 	i := 0
 	// mostly unique values, just sample 10
 	if len(valueMap) >= len(column)>>1 {
-		fmt.Fprintln(writer, "MOSTLY UNIQUE VALUES JUST SHOWING SAMPLE OF 10")
+		fmt.Fprintln(writer, "MOSTLY UNIQUE VALUES SHOWING SAMPLE...")
 		fmt.Fprintln(writer, "row: value -> count")
 		for k, v := range valueMap {
 			if i > 10 {

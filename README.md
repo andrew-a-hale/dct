@@ -58,7 +58,8 @@ Metrics spec:
   - Aggregations: mean, median, min, max, count_distinct
 
 Example
-dct diff a examples/left.parquet examples/right.csv -m '{"metrics":[{"agg":"count_distinct","left":"c","right":"c"}]}'
+dct diff a examples/left.parquet examples/right.csv \
+-m '{"metrics":[{"agg":"count_distinct","left":"c","right":"c"}]}'
 
 ╭──────┬──────┬──────┬───────┬──────────────────┬──────────────────┬───────────────────╮
 │  a   │l_cnt │r_cnt │cnt_eq │l_c_count_distinct│r_c_count_distinct│c_count_distinct_eq│
@@ -79,12 +80,15 @@ Flags:
   -w, --width int32   Width of the chart in characters
 
 Examples
-dct chart -w 50 examples/left.csv 1 count
+dct chart -w 50 examples/chart.csv 1 count
 
-  ┌─ histogram of 'left.csv' ────────────────────┐
-1 ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 6.00 │
-2 ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 5.00       │
-  └──────────────────────────────────────────────┘
+            ┌─ histogram of 'chart.csv' ─────────┐
+        xyz ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 42.00 │
+        bcd ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 24.00             │
+        abc ┤ ╍╍╍╍╍╍╍╍╍╍╍╍ 18.00                 │
+        123 ┤ ╍╍╍╍ 6.00                          │
+23467w81234 ┤ ╍ 1.00                             │
+            └────────────────────────────────────┘
 ```
 
 ### Generator
@@ -120,30 +124,34 @@ Convert nested JSON to flat formats:
 
 ```bash
 dct flattify <json file or json> [flags]
-  -s, --sql              Create DuckDB-compliant SQL statement
+  -s, --sql              Create DuckDB-compliant SQL Select statement
   -o, --output <file>    Output to file (default stdout)
 
 Examples
 dct flattify examples/faker-comp.json
 
 {
-  "1.data_type": "string",
-  "1.field": "first_name",
-  "1.source": "firstNames",
-  "2.data_type": "string",
-  "2.field": "last_name",
-  "2.source": "lastNames",
-  "3.data_type": "string",
-  "3.field": "company",
-  "3.source": "companies",
-  "4.source": "emails",
-  "4.data_type": "string",
-  "4.field": "email",
-  "5.data_type": "int",
-  "5.field": "phone_number",
-  "5.source": "randomUniformInt",
-  "5.config.min": 10000000,
-  "5.config.max": 99999999
+  "$[0].data_type": "string",
+  "$[0].field": "first_name",
+  "$[0].source": "firstNames",
+  "$[1].data_type": "string",
+  "$[1].field": "last_name",
+  "$[1].source": "lastNames",
+  "$[2].data_type": "string",
+  "$[2].field": "company",
+  "$[2].source": "companies",
+  "$[3].data_type": "string",
+  "$[3].field": "email",
+  "$[3].source": "derived",
+  "$[3].config.fields[0]": "first_name",
+  "$[3].config.fields[1]": "last_name",
+  "$[3].config.fields[2]": "company",
+  "$[3].config.expression": "first_name + '.' + last_name + '@' + replace(company, ' ', '') + '.COM'",
+  "$[4].data_type": "int",
+  "$[4].field": "phone_number",
+  "$[4].source": "randomUniformInt",
+  "$[4].config.max": 99999999,
+  "$[4].config.min": 10000000
 }
 ```
 

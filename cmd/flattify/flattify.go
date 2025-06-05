@@ -12,11 +12,9 @@ import (
 	"maps"
 	"os"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/spf13/cobra"
 )
@@ -61,6 +59,10 @@ var FlattifyCmd = &cobra.Command{
 			flattify(payload, writer, writeJson)
 		case ext == utils.NDJSON && !sql:
 			flattifyLines(payload, writer, writeJsonLines)
+		}
+
+		if sql {
+			writeFromStatement(args[0], writer)
 		}
 	},
 }
@@ -125,17 +127,30 @@ func flattifyJson(obj any) []Tuple {
 		case []any:
 			for i, v := range obj {
 				if path == "" {
-					_flatten(v, strconv.Itoa(i+1))
+					if sql {
+						_flatten(v, fmt.Sprintf("json[%d]", i))
+					} else {
+						_flatten(v, fmt.Sprintf("$[%d]", i))
+					}
 				} else {
-					_flatten(v, fmt.Sprintf("%s.%d", path, i+1))
+					_flatten(v, fmt.Sprintf("%s[%d]", path, i))
 				}
 			}
 		case map[string]any:
 			for k, v := range obj {
+				_, err := strconv.Atoi(k)
+				key := k
+				if err == nil {
+					key = fmt.Sprintf(`"%v"`, k)
+				}
 				if path == "" {
-					_flatten(v, k)
+					if sql {
+						_flatten(v, "json."+key)
+					} else {
+						_flatten(v, "$."+key)
+					}
 				} else {
-					_flatten(v, fmt.Sprintf("%s.%s", path, k))
+					_flatten(v, fmt.Sprintf("%s.%s", path, key))
 				}
 			}
 		}
@@ -209,22 +224,10 @@ func writeJsonLines(lines any, writer io.Writer) {
 }
 
 func writeSelectStatement(line any, writer io.Writer) {
-	re := regexp.MustCompile(`\.?(\d+)`)
-
 	fmt.Fprint(writer, "select\n")
 	paths := make(map[string]string)
 	for _, v := range line.([]Tuple) {
-		key, ok := v[0].(string)
-		if !ok {
-			log.Fatalf("failed to create merged select statement: %v", v[0])
-		}
-
-		var path string
-		if unicode.IsNumber(rune(key[0])) {
-			path += "json"
-		}
-
-		path += string(re.ReplaceAll([]byte(key), []byte("[$1]")))
+		path := v[0].(string)
 		switch v[1].(type) {
 		case nil:
 		case string:
@@ -254,25 +257,10 @@ func writeSelectStatement(line any, writer io.Writer) {
 }
 
 func writeMergedSelectStatement(lines any, writer io.Writer) {
-	re := regexp.MustCompile(`\.?(\d+)`)
-
 	paths := make(map[string]string)
 	for _, line := range lines.([][]Tuple) {
 		for _, v := range line {
-			key, ok := v[0].(string)
-			if !ok {
-				log.Fatalf("failed to create merged select statement: %v", v[0])
-			}
-
-			var path string
-
-			// edge case where key in top layer is an integer
-			if unicode.IsNumber(rune(key[0])) {
-				path += fmt.Sprintf(`json."%s"`, key[:strings.Index(key, ".")])
-				key = key[strings.Index(key, "."):]
-			}
-
-			path += string(re.ReplaceAll([]byte(key), []byte("[$1]")))
+			path := v[0].(string)
 			switch v[1].(type) {
 			case nil:
 			case string:
@@ -327,4 +315,14 @@ func detectJsonType(content []byte) (string, error) {
 	}
 
 	return utils.NDJSON, nil
+}
+
+func writeFromStatement(payload string, writer io.Writer) {
+	if json.Valid([]byte(payload)) {
+		fmt.Fprintf(writer, "from (select '%v'::json as json)\n", payload)
+	} else if fs.ValidPath(payload) {
+		fmt.Fprintf(writer, "from read_json_objects('%v', format='unstructured') as json\n", payload)
+	} else {
+		log.Fatal("unreachable")
+	}
 }

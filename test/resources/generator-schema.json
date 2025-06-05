@@ -6,7 +6,7 @@
   },
   {
     "data_type": "string",
-    "field": "nonce",
+    "field": "random",
     "source": "randomAscii",
     "config": {
       "length": 10
@@ -28,8 +28,7 @@
     "config": {
       "mean": 175,
       "std": 10,
-      "digits": 5,
-      "decimals": 2
+      "digits": 5
     }
   },
   {
@@ -39,8 +38,7 @@
     "config": {
       "mean": 70,
       "std": 10,
-      "digits": 5,
-      "decimals": 2
+      "digits": 5
     }
   },
   {
@@ -70,7 +68,7 @@
         "first_name",
         "last_name"
       ],
-      "expression": "first_name || ' ' || last_name"
+      "expression": "first_name + ' ' + last_name"
     }
   },
   {

@@ -55,14 +55,16 @@ func writeCsv(ctx context.Context, out io.Writer, schema Schema, lines int) {
 
 		for i, f := range schema {
 			value := f.Generate(ctx)
-			if strings.Contains(value, `"`) {
-				value = strings.ReplaceAll(value, `"`, `""`)
-			}
-			if strings.Contains(value, ",") {
-				value = fmt.Sprintf(`"%s"`, value)
+			if v, ok := value.(string); ok {
+				if strings.Contains(v, `"`) {
+					value = strings.ReplaceAll(v, `"`, `""`)
+				}
+				if strings.Contains(v, ",") {
+					value = fmt.Sprintf(`"%s"`, value)
+				}
 			}
 
-			fmt.Fprintf(out, "%s", value)
+			fmt.Fprintf(out, "%v", value)
 			if i < fields-1 {
 				fmt.Fprintf(out, ",")
 			} else {
@@ -78,10 +80,10 @@ func writeJson(ctx context.Context, out io.Writer, schema Schema, lines int) {
 		for i, f := range schema {
 			value := f.Generate(ctx)
 
-			switch f.GetType() {
-			case FLOAT, INT, BOOL:
-				fmt.Fprintf(out, `"%s":%s`, f.GetName(), value)
-			case STRING:
+			switch value.(type) {
+			case float32, float64, int, int32, int64, bool:
+				fmt.Fprintf(out, `"%s":%v`, f.GetName(), value)
+			case string:
 				v, err := json.Marshal(value)
 				if err != nil {
 					log.Fatalf("failed to write `%s: %v` as json: %v", f.GetName(), value, err)

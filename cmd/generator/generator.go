@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"dct/cmd/utils"
 	"encoding/json"
 	"io"
 	"log"
@@ -16,7 +17,7 @@ var (
 	lines     int
 	format    string
 	outfile   string
-	CACHE     map[string]string = make(map[string]string)
+	cache     utils.Cache = utils.NewCache()
 )
 
 func init() {

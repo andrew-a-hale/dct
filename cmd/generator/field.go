@@ -4,7 +4,6 @@ import (
 	"context"
 	"dct/cmd/generator/sources"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"math"
@@ -15,13 +14,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-)
-
-const (
-	STRING = "string"
-	INT    = "int"
-	FLOAT  = "float"
-	BOOL   = "bool"
 )
 
 func ParseField[T Field](raw []byte) *T {
@@ -105,8 +97,7 @@ func parseSchema(rawSchema string) Schema {
 }
 
 type Field interface {
-	Generate(context.Context) string
-	GetType() string
+	Generate(context.Context) any
 	GetName() string
 }
 
@@ -117,21 +108,16 @@ type RandomBoolField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s RandomBoolField) Generate(ctx context.Context) string {
-	var value string
+func (s RandomBoolField) Generate(ctx context.Context) any {
+	var value bool
 	if rand.Float32() > 0.5 {
-		value = "true"
+		value = true
 	} else {
-		value = "false"
+		value = false
 	}
 
-	CACHE[s.Field] = value
-
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomBoolField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomBoolField) GetName() string {
@@ -148,19 +134,15 @@ type RandomAsciiField struct {
 }
 
 // randomly generated ascii string with chars from 33-126
-func (s RandomAsciiField) Generate(ctx context.Context) string {
+func (s RandomAsciiField) Generate(ctx context.Context) any {
 	var value string
 	for range s.Config.Length {
 		value += string(uint8(rand.IntN(93) + 33))
 	}
 
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 
 	return value
-}
-
-func (s RandomAsciiField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomAsciiField) GetName() string {
@@ -177,14 +159,10 @@ type RandomUniformIntField struct {
 	} `json:"config"`
 }
 
-func (s RandomUniformIntField) Generate(ctx context.Context) string {
-	value := strconv.Itoa(rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min)
-	CACHE[s.Field] = value
+func (s RandomUniformIntField) Generate(ctx context.Context) any {
+	value := rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomUniformIntField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomUniformIntField) GetName() string {
@@ -196,21 +174,15 @@ type RandomNormalField struct {
 	Source   string `json:"source"`
 	DataType string `json:"data_type"`
 	Config   struct {
-		Mean     float64 `json:"mean"`
-		Std      float64 `json:"std"`
-		Decimals int     `json:"decimals"`
+		Mean float64 `json:"mean"`
+		Std  float64 `json:"std"`
 	} `json:"config"`
 }
 
-func (s RandomNormalField) Generate(ctx context.Context) string {
-	format := fmt.Sprintf("%%0.%df", s.Config.Decimals)
-	value := fmt.Sprintf(format, rand.NormFloat64()*s.Config.Std+s.Config.Mean)
-	CACHE[s.Field] = value
+func (s RandomNormalField) Generate(ctx context.Context) any {
+	value := rand.NormFloat64()*s.Config.Std + s.Config.Mean
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomNormalField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomNormalField) GetName() string {
@@ -226,9 +198,9 @@ type RandomPoissonField struct {
 	} `json:"config"`
 }
 
-func (s RandomPoissonField) Generate(ctx context.Context) string {
+func (s RandomPoissonField) Generate(ctx context.Context) any {
 	value := strconv.Itoa(generatePoisson(s.Config.Lambda))
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
 }
 
@@ -245,10 +217,6 @@ func generatePoisson(lambda int) int {
 	return n
 }
 
-func (s RandomPoissonField) GetType() string {
-	return s.DataType
-}
-
 func (s RandomPoissonField) GetName() string {
 	return s.Field
 }
@@ -259,14 +227,10 @@ type LastNameField struct {
 	DataType string `json:"data_type"`
 }
 
-func (s LastNameField) Generate(ctx context.Context) string {
+func (s LastNameField) Generate(ctx context.Context) any {
 	value := sources.LastNames[rand.IntN(len(sources.LastNames))]
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s LastNameField) GetType() string {
-	return s.DataType
 }
 
 func (s LastNameField) GetName() string {
@@ -279,14 +243,10 @@ type FirstNameField struct {
 	DataType string `json:"data_type"`
 }
 
-func (s FirstNameField) Generate(ctx context.Context) string {
+func (s FirstNameField) Generate(ctx context.Context) any {
 	value := sources.FirstNames[rand.IntN(len(sources.FirstNames))]
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s FirstNameField) GetType() string {
-	return s.DataType
 }
 
 func (s FirstNameField) GetName() string {
@@ -304,7 +264,7 @@ type RandomDatetimeField struct {
 	} `json:"config"`
 }
 
-func (s RandomDatetimeField) Generate(ctx context.Context) string {
+func (s RandomDatetimeField) Generate(ctx context.Context) any {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -346,12 +306,8 @@ func (s RandomDatetimeField) Generate(ctx context.Context) string {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc).Format(time.RFC3339)
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomDatetimeField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomDatetimeField) GetName() string {
@@ -368,7 +324,7 @@ type RandomDateField struct {
 	} `json:"config"`
 }
 
-func (s RandomDateField) Generate(ctx context.Context) string {
+func (s RandomDateField) Generate(ctx context.Context) any {
 	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
 	MIN_TIME := time.Unix(0, 0)
 
@@ -406,12 +362,8 @@ func (s RandomDateField) Generate(ctx context.Context) string {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).Format(time.DateOnly)
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomDateField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomDateField) GetName() string {
@@ -428,7 +380,7 @@ type RandomTimeField struct {
 	} `json:"config"`
 }
 
-func (s RandomTimeField) Generate(ctx context.Context) string {
+func (s RandomTimeField) Generate(ctx context.Context) any {
 	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
 	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
 
@@ -472,12 +424,8 @@ func (s RandomTimeField) Generate(ctx context.Context) string {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC).Format(time.TimeOnly)
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s RandomTimeField) GetType() string {
-	return s.DataType
 }
 
 func (s RandomTimeField) GetName() string {
@@ -490,14 +438,10 @@ type UuidField struct {
 	DataType string `json:"data_type"`
 }
 
-func (s UuidField) Generate(ctx context.Context) string {
+func (s UuidField) Generate(ctx context.Context) any {
 	value := uuid.NewString()
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s UuidField) GetType() string {
-	return s.DataType
 }
 
 func (s UuidField) GetName() string {
@@ -510,14 +454,10 @@ type EmailField struct {
 	DataType string `json:"data_type"`
 }
 
-func (s EmailField) Generate(ctx context.Context) string {
+func (s EmailField) Generate(ctx context.Context) any {
 	value := sources.Emails[rand.IntN(len(sources.Emails))]
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s EmailField) GetType() string {
-	return s.DataType
 }
 
 func (s EmailField) GetName() string {
@@ -531,14 +471,10 @@ type CompanyField struct {
 	Value    string
 }
 
-func (s CompanyField) Generate(ctx context.Context) string {
+func (s CompanyField) Generate(ctx context.Context) any {
 	value := sources.Companies[rand.IntN(len(sources.Companies))]
-	CACHE[s.Field] = value
+	cache.PutValue(s.Field, value)
 	return value
-}
-
-func (s CompanyField) GetType() string {
-	return s.DataType
 }
 
 func (s CompanyField) GetName() string {
