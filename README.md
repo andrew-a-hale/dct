@@ -128,30 +128,12 @@ dct flattify <json file or json> [flags]
   -o, --output <file>    Output to file (default stdout)
 
 Examples
-dct flattify examples/faker-comp.json
+dct flattify '[ 1, {"value": {"nested": [0, 1]}}]'
 
 {
-  "$[0].data_type": "string",
-  "$[0].field": "first_name",
-  "$[0].source": "firstNames",
-  "$[1].data_type": "string",
-  "$[1].field": "last_name",
-  "$[1].source": "lastNames",
-  "$[2].data_type": "string",
-  "$[2].field": "company",
-  "$[2].source": "companies",
-  "$[3].data_type": "string",
-  "$[3].field": "email",
-  "$[3].source": "derived",
-  "$[3].config.fields[0]": "first_name",
-  "$[3].config.fields[1]": "last_name",
-  "$[3].config.fields[2]": "company",
-  "$[3].config.expression": "first_name + '.' + last_name + '@' + replace(company, ' ', '') + '.COM'",
-  "$[4].data_type": "int",
-  "$[4].field": "phone_number",
-  "$[4].source": "randomUniformInt",
-  "$[4].config.max": 99999999,
-  "$[4].config.min": 10000000
+  "$[0]": 1,
+  "$[1]['value']['nested'][0]": 0,
+  "$[1]['value']['nested'][1]": 1
 }
 ```
 

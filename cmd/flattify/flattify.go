@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -138,19 +137,19 @@ func flattifyJson(obj any) []Tuple {
 			}
 		case map[string]any:
 			for k, v := range obj {
-				_, err := strconv.Atoi(k)
-				key := k
-				if err == nil {
-					key = fmt.Sprintf(`"%v"`, k)
-				}
-				if path == "" {
-					if sql {
-						_flatten(v, "json."+key)
+				if sql {
+					if path == "" {
+						_flatten(v, fmt.Sprintf(`json."%s"`, k))
 					} else {
-						_flatten(v, "$."+key)
+						_flatten(v, fmt.Sprintf(`%s."%s"`, path, k))
 					}
 				} else {
-					_flatten(v, fmt.Sprintf("%s.%s", path, key))
+					k := fmt.Sprintf("['%s']", k)
+					if path == "" {
+						_flatten(v, "$"+k)
+					} else {
+						_flatten(v, fmt.Sprintf("%s%s", path, k))
+					}
 				}
 			}
 		}
