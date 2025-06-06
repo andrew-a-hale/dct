@@ -160,71 +160,63 @@ Count: 10
 Unique Count: 10
 
 Value Occurrence
-MOSTLY UNIQUE VALUES JUST SHOWING SAMPLE OF 10
+MOSTLY UNIQUE VALUES SHOWING SAMPLE...
 row: value -> count
-0: NULL -> 1
-1: Contains \0 null -> 1
-2: Simple description -> 1
-3: Special chars: \/, \\, | -> 1
-4: SQL Injection attempt -> 1
-5: Non-ASCII chars -> 1
-6: Contains , commas -> 1
-7: Contains "double quotes" -> 1
-8: Contains
+0: Contains "double quotes" -> 1
+1: Contains
 line breaks -> 1
-9: Contains\ttabs -> 1
+2: Contains\ttabs -> 1
+3: Special chars: \/, \\, | -> 1
+4: Contains \0 null -> 1
+5: SQL Injection attempt -> 1
+6: <nil> -> 1
+7: Non-ASCII chars -> 1
+8: Simple description -> 1
+9: Contains , commas -> 1
 
 Value Summary - String Lengths
-Min: 4
-Mean: 17.300000
+Min: 5
+Mean: 17.400000
 Max: 24
 
 Char Occurrence
 row: rune -> count
-00: 'n' (unicode: U+006E) (UTF-8: 110) -> 16
-01: 's' (unicode: U+0073) (UTF-8: 115) -> 12
-02: 'L' (unicode: U+004C) (UTF-8: 76) -> 3
-03: '|' (unicode: U+007C) (UTF-8: 124) -> 1
-04: 't' (unicode: U+0074) (UTF-8: 116) -> 13
-05: '"' (unicode: U+0022) (UTF-8: 34) -> 2
-06: 'b' (unicode: U+0062) (UTF-8: 98) -> 3
-07: 'r' (unicode: U+0072) (UTF-8: 114) -> 4
-08: 'p' (unicode: U+0070) (UTF-8: 112) -> 4
-09: 'c' (unicode: U+0063) (UTF-8: 99) -> 6
-10: ':' (unicode: U+003A) (UTF-8: 58) -> 1
-11: 'I' (unicode: U+0049) (UTF-8: 73) -> 3
-12: 'q' (unicode: U+0071) (UTF-8: 113) -> 1
-13: '\\' (unicode: U+005C) (UTF-8: 92) -> 5
-14: 'S' (unicode: U+0053) (UTF-8: 83) -> 4
-15: ',' (unicode: U+002C) (UTF-8: 44) -> 3
-16: 'U' (unicode: U+0055) (UTF-8: 85) -> 1
-17: 'a' (unicode: U+0061) (UTF-8: 97) -> 12
-18: 'i' (unicode: U+0069) (UTF-8: 105) -> 11
-19: 'u' (unicode: U+0075) (UTF-8: 117) -> 3
-20: 'N' (unicode: U+004E) (UTF-8: 78) -> 2
-21: 'Q' (unicode: U+0051) (UTF-8: 81) -> 1
-22: 'A' (unicode: U+0041) (UTF-8: 65) -> 1
-23: '\n' (unicode: U+000A) (UTF-8: 10) -> 1
-24: 'k' (unicode: U+006B) (UTF-8: 107) -> 1
-25: 'm' (unicode: U+006D) (UTF-8: 109) -> 4
-26: 'C' (unicode: U+0043) (UTF-8: 67) -> 6
-27: 'o' (unicode: U+006F) (UTF-8: 111) -> 11
-28: ' ' (unicode: U+0020) (UTF-8: 32) -> 15
-29: '-' (unicode: U+002D) (UTF-8: 45) -> 1
-30: 'd' (unicode: U+0064) (UTF-8: 100) -> 2
-31: 'l' (unicode: U+006C) (UTF-8: 108) -> 6
-32: '/' (unicode: U+002F) (UTF-8: 47) -> 1
-33: 'j' (unicode: U+006A) (UTF-8: 106) -> 1
-34: '0' (unicode: U+0030) (UTF-8: 48) -> 1
-35: 'h' (unicode: U+0068) (UTF-8: 104) -> 2
-36: 'e' (unicode: U+0065) (UTF-8: 101) -> 9
-
-Char Analysis
-Control: 0
-Comma: 3
-Pipe: 1
-Quotes: 2
-Nonspace-Whitespace: 1
-NonAscii: 0
-Rest: 151
+00: 'l' (hex: U+006C) (dec: 108) -> 7
+01: 'b' (hex: U+0062) (dec: 98) -> 3
+02: '/' (hex: U+002F) (dec: 47) -> 1
+03: 'Q' (hex: U+0051) (dec: 81) -> 1
+04: 'L' (hex: U+004C) (dec: 76) -> 1
+05: 'I' (hex: U+0049) (dec: 73) -> 3
+06: 'A' (hex: U+0041) (dec: 65) -> 1
+07: 'a' (hex: U+0061) (dec: 97) -> 12
+08: 'u' (hex: U+0075) (dec: 117) -> 3
+09: ':' (hex: U+003A) (dec: 58) -> 1
+10: 'N' (hex: U+004E) (dec: 78) -> 1
+11: '-' (hex: U+002D) (dec: 45) -> 1
+12: 'S' (hex: U+0053) (dec: 83) -> 4
+13: 'd' (hex: U+0064) (dec: 100) -> 2
+14: 's' (hex: U+0073) (dec: 115) -> 12
+15: '|' (hex: U+007C) (dec: 124) -> 1
+16: 'm' (hex: U+006D) (dec: 109) -> 4
+17: 'e' (hex: U+0065) (dec: 101) -> 9
+18: ' ' (hex: U+0020) (dec: 32) -> 15
+19: 't' (hex: U+0074) (dec: 116) -> 13
+20: 'o' (hex: U+006F) (dec: 111) -> 11
+21: ',' (hex: U+002C) (dec: 44) -> 3
+22: '>' (hex: U+003E) (dec: 62) -> 1
+23: 'q' (hex: U+0071) (dec: 113) -> 1
+24: '\\' (hex: U+005C) (dec: 92) -> 5
+25: 'n' (hex: U+006E) (dec: 110) -> 17
+26: 'c' (hex: U+0063) (dec: 99) -> 6
+27: 'r' (hex: U+0072) (dec: 114) -> 4
+28: 'h' (hex: U+0068) (dec: 104) -> 2
+29: '<' (hex: U+003C) (dec: 60) -> 1
+30: 'i' (hex: U+0069) (dec: 105) -> 12
+31: 'C' (hex: U+0043) (dec: 67) -> 6
+32: '"' (hex: U+0022) (dec: 34) -> 2
+33: '0' (hex: U+0030) (dec: 48) -> 1
+34: 'j' (hex: U+006A) (dec: 106) -> 1
+35: 'k' (hex: U+006B) (dec: 107) -> 1
+36: 'p' (hex: U+0070) (dec: 112) -> 4
+37: '\n' (hex: U+000A) (dec: 10) -> 1
 ```
