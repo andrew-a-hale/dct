@@ -53,13 +53,11 @@ dct diff <keys> <file1> <file2> [flags]
 
 Key spec format: left_key[=right_key]
 Metrics spec:
-  - JSON: {agg: {left: col, right: col}, ...}
-  - File path: {file}.json
+  - JSON: [{agg: left: col, right: col}, ...]
   - Aggregations: mean, median, min, max, count_distinct
 
 Example
-dct diff a examples/left.parquet examples/right.csv \
--m '{"metrics":[{"agg":"count_distinct","left":"c","right":"c"}]}'
+dct diff a examples/left.parquet examples/right.csv -m '[{"agg":"count_distinct","left":"c","right":"c"}]'
 
 ╭──────┬──────┬──────┬───────┬──────────────────┬──────────────────┬───────────────────╮
 │  a   │l_cnt │r_cnt │cnt_eq │l_c_count_distinct│r_c_count_distinct│c_count_distinct_eq│
@@ -74,13 +72,13 @@ dct diff a examples/left.parquet examples/right.csv \
 Generate simple charts from data:
 
 ```bash
-dct chart [file] [colIndex] [agg] [flags]
+dct chart [file] [colIndex] [flags]
 
 Flags:
   -w, --width int32   Width of the chart in characters
 
 Examples
-dct chart -w 50 examples/chart.csv 1 count
+dct chart -w 50 examples/chart.csv 1
 
             ┌─ histogram of 'chart.csv' ─────────┐
         xyz ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 42.00 │
@@ -116,7 +114,7 @@ DYLAN,ALLEN,JACOBS ENGINEERING GROUP,DYLAN.ALLEN@JACOBSENGINEERINGGROUP.COM,8316
 
 #### DSL For Derived Fields
 
-See [here](https://expr-lang.org/docs/language-definition) for DSL specification for schema.
+Expressions for the Derived Fields use [Expr](https://expr-lang.org/docs/language-definition).
 
 ### Flattify
 
@@ -135,6 +133,14 @@ dct flattify '[ 1, {"value": {"nested": [0, 1]}}]'
   "$[1]['value']['nested'][0]": 0,
   "$[1]['value']['nested'][1]": 1
 }
+
+dct flattify '[ 1, {"value": {"nested": [0, 1]}}]' -s
+
+select
+        json[0]::decimal
+        , json[1]."value"."nested"[0]::decimal
+        , json[1]."value"."nested"[1]::decimal
+from (select '[ 1, {"value": {"nested": [0, 1]}}]'::json as json)
 ```
 
 ### Profile

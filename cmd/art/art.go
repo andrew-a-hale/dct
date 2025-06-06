@@ -42,6 +42,7 @@ var ArtCmd = &cobra.Command{
 		frame := 1
 		var i int
 		for {
+			// switch graphic
 			if frame%(FRAMERATE*2) == 0 {
 				i = (i + 1) % len(graphics)
 				scene.Graphic = makeGraphic(
@@ -50,8 +51,8 @@ var ArtCmd = &cobra.Command{
 					scene.Graphic.Pos.Col,
 					scene.Width,
 					scene.Height,
-					int(scene.Graphic.Direction.X),
-					int(scene.Graphic.Direction.Y),
+					scene.Graphic.Direction.X,
+					scene.Graphic.Direction.Y,
 				)
 			}
 			scene.Draw()

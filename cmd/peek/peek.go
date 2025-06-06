@@ -14,23 +14,23 @@ import (
 )
 
 var (
-	defaultWriter       = os.Stdout
-	defaultLines  int32 = 10
-	lines         int32
+	defaultWriter     = os.Stdout
+	defaultLines  int = 10
+	lines         int
 	output        string
 	writer        io.Writer
 )
 
 func init() {
 	PeekCmd.Flags().StringVarP(&output, "output", "o", "", "Output to file instead of stdout")
-	PeekCmd.Flags().Int32VarP(&lines, "lines", "n", 0, "Number of lines to display")
+	PeekCmd.Flags().IntVarP(&lines, "lines", "n", 0, "Number of lines to display")
 }
 
 var PeekCmd = &cobra.Command{
-	Use:   "peek [FILE]",
+	Use:   "peek <file>",
 	Short: "Preview file contents",
 	Long:  `Display the first few lines of a data file to quickly inspect its structure and content`,
-	Args:  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	Args:  cobra.MatchAll(cobra.MinimumNArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := parseFileArg(args)
 		log.Printf("peeking at %s...\n", file)
@@ -69,7 +69,7 @@ func parseFileArg(args []string) string {
 	return ""
 }
 
-func peek(file string, lines int32, writer io.Writer) {
+func peek(file string, lines int, writer io.Writer) {
 	query := fmt.Sprintf("select * from '%s' limit %d", file, lines)
 	result, err := utils.Query(query)
 	if err != nil {

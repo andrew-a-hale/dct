@@ -104,7 +104,6 @@ type Field interface {
 type RandomBoolField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 }
 
 // randomly generated ascii string with chars from 33-126
@@ -127,7 +126,6 @@ func (s RandomBoolField) GetName() string {
 type RandomAsciiField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Length int `json:"length"`
 	} `json:"config"`
@@ -150,10 +148,9 @@ func (s RandomAsciiField) GetName() string {
 }
 
 type RandomUniformIntField struct {
-	Field    string `json:"field"`
-	Source   string `json:"source"`
-	DataType string `json:"data_type"`
-	Config   struct {
+	Field  string `json:"field"`
+	Source string `json:"source"`
+	Config struct {
 		Min int `json:"min"`
 		Max int `json:"max"`
 	} `json:"config"`
@@ -172,7 +169,6 @@ func (s RandomUniformIntField) GetName() string {
 type RandomNormalField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Mean float64 `json:"mean"`
 		Std  float64 `json:"std"`
@@ -192,7 +188,6 @@ func (s RandomNormalField) GetName() string {
 type RandomPoissonField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Lambda int `json:"lambda"`
 	} `json:"config"`
@@ -224,7 +219,6 @@ func (s RandomPoissonField) GetName() string {
 type LastNameField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 }
 
 func (s LastNameField) Generate(ctx context.Context) any {
@@ -240,7 +234,6 @@ func (s LastNameField) GetName() string {
 type FirstNameField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 }
 
 func (s FirstNameField) Generate(ctx context.Context) any {
@@ -256,7 +249,6 @@ func (s FirstNameField) GetName() string {
 type RandomDatetimeField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Tz  string `json:"tz"`
 		Min string `json:"min"`
@@ -317,7 +309,6 @@ func (s RandomDatetimeField) GetName() string {
 type RandomDateField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
@@ -373,7 +364,6 @@ func (s RandomDateField) GetName() string {
 type RandomTimeField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Min string `json:"min"`
 		Max string `json:"max"`
@@ -435,7 +425,6 @@ func (s RandomTimeField) GetName() string {
 type UuidField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 }
 
 func (s UuidField) Generate(ctx context.Context) any {
@@ -451,7 +440,6 @@ func (s UuidField) GetName() string {
 type EmailField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 }
 
 func (s EmailField) Generate(ctx context.Context) any {
@@ -467,8 +455,6 @@ func (s EmailField) GetName() string {
 type CompanyField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
-	Value    string
 }
 
 func (s CompanyField) Generate(ctx context.Context) any {

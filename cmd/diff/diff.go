@@ -36,22 +36,18 @@ type Metric struct {
 	Right string `json:"right,omitempty"`
 }
 
-type metricSpec struct {
-	Metrics []Metric `json:"metrics"`
-}
-
 func init() {
 	DiffCmd.Flags().StringVarP(&output, "output", "o", "", "Output comparison to file")
 	DiffCmd.Flags().StringVarP(&metrics, "metrics", "m", "",
 		`Metrics specification for comparison, using JSON format:
-  {{"agg": "mean", "left": "a", "right": "b"}, {"agg": "count_distinct", "left": "c"}}
+  [{"agg": "mean", "left": "a", "right": "b"}, {"agg": "count_distinct", "left": "c"}]
   Supported aggregations: mean, median, min, max, count_distinct`)
 
 	DiffCmd.Flags().BoolVarP(&all, "all", "a", false, "Show all rows, not just differences")
 }
 
 var DiffCmd = &cobra.Command{
-	Use:   "diff [keys] [file1] [file2]",
+	Use:   "diff <keys> <file1> <file2>",
 	Short: "Compare files with key matching",
 	Long: `Compare two files using key matching and metric calculations. 
 	Specify keys in format: left_key[=right_key] (comma-separated for multiple keys)
@@ -69,7 +65,7 @@ var DiffCmd = &cobra.Command{
 			}
 		}
 
-		var metricConf metricSpec
+		var metricConf []Metric
 		if metrics != "" {
 			metricConf = parseMetrics(metrics)
 		}
@@ -104,7 +100,7 @@ func parseKeys(keyString string) keySpec {
 	return keySpec{keys: keys}
 }
 
-func parseMetrics(metricString string) metricSpec {
+func parseMetrics(metricString string) []Metric {
 	metrics := []byte(metricString)
 
 	file, err := os.Open(metricString)
@@ -113,7 +109,7 @@ func parseMetrics(metricString string) metricSpec {
 	}
 	defer file.Close()
 
-	var spec metricSpec
+	var spec []Metric
 	err = json.Unmarshal(metrics, &spec)
 	if err != nil {
 		log.Fatalf("Error: failed to parse metric config: %v\n", err)
@@ -135,12 +131,12 @@ func generateKeySql(spec keySpec) (left, right string) {
 	return left, right
 }
 
-func generateMetricSql(spec metricSpec) (left, right, main, check string) {
-	if len(spec.Metrics) == 0 {
+func generateMetricSql(spec []Metric) (left, right, main, check string) {
+	if len(spec) == 0 {
 		return
 	}
 
-	for i, metric := range spec.Metrics {
+	for i, metric := range spec {
 		if metric.Agg == utils.COUNT_DISTINCT {
 			left += fmt.Sprintf("count(distinct %s) as l_%s_count_distinct", metric.Left, metric.Left)
 
@@ -171,11 +167,11 @@ func generateMetricSql(spec metricSpec) (left, right, main, check string) {
 			metric.Agg,
 		)
 
-		if !all {
-			check += fmt.Sprintf(" or l_%s_%s != r_%s_%s", metric.Left, metric.Agg, metric.Left, metric.Agg)
+		if all {
+			check += fmt.Sprintf(" or l_%s_%s == r_%s_%s", metric.Left, metric.Agg, metric.Left, metric.Agg)
 		}
 
-		if i < len(spec.Metrics)-1 {
+		if i < len(spec)-1 {
 			left += ", "
 			right += ", "
 			main += ", "
@@ -185,7 +181,7 @@ func generateMetricSql(spec metricSpec) (left, right, main, check string) {
 	return left, right, main, check
 }
 
-func generateSql(keys keySpec, left, right string, metrics metricSpec) string {
+func generateSql(keys keySpec, left, right string, metrics []Metric) string {
 	leftKeys, rightKeys := generateKeySql(keys)
 	leftMetrics, rightMetrics, mainMetrics, checkMetrics := generateMetricSql(metrics)
 	leftSql := fmt.Sprintf("select %s, count(*) as l_cnt, %s from '%s' group by all", leftKeys, leftMetrics, left)
@@ -213,7 +209,7 @@ order by cnt_eq`,
 	return sql
 }
 
-func diff(keys keySpec, left string, right string, metrics metricSpec, writer io.Writer) {
+func diff(keys keySpec, left string, right string, metrics []Metric, writer io.Writer) {
 	leftHasRows, err := utils.CheckFileHasRows(left)
 	if err != nil {
 		log.Fatalf("failed to check file: %v", err)

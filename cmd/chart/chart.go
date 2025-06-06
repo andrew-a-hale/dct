@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -17,16 +16,21 @@ import (
 )
 
 func init() {
-	ChartCmd.Flags().Int32VarP(&width, "width", "w", 0, "Width of the chart in characters")
+	ChartCmd.Flags().IntVarP(&width, "width", "w", 0, "Width of the chart in characters")
 }
+
+const (
+	DECIMAL_PLACES int = 2
+	MIN_WIDTH      int = 20
+)
 
 var (
 	TEXTURE                []byte = []byte("╍")
 	DIV_CHAR               []byte = []byte("┤")
 	MIDDLE_HORIZONTAL_CHAR []byte = []byte("─")
 	MIDDLE_VERTICAL_CHAR   []byte = []byte("│")
-	DECIMAL_PLACES         int    = 2
-	width                  int32
+	width                  int
+	agg                    string
 )
 
 type Chart struct {
@@ -44,27 +48,26 @@ var CHART_TEMPLATE string = `
 `
 
 var ChartCmd = &cobra.Command{
-	Use:   "chart [file] [colIndex] [agg]",
+	Use:   "chart [file] [colIndex]",
 	Short: "Generate visualisations from data",
 	Long:  `Create a simple ASCII bar chart from data file using specified column and aggregation function`,
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		checkArgs(args)
-		xs, ys := processAgg(args)
-		filename := filepath.Base(args[0])
+		filename, colIndex := checkArgs(args)
+		xs, ys := processAgg(filename, colIndex)
 		draw(filename, xs, ys)
 	},
 }
 
-func draw(filename string, xs []string, ys []float64) {
-	width := int(width)
+func draw(filename string, xs []string, ys []int) {
 	termWidth, _, err := term.GetSize(int(os.Stdin.Fd()))
 	if err != nil {
+		termWidth = 50
 		log.Fatalf("failed to get terminal size: %v\n", err)
 	}
 
 	xMaxLength := maxStringWidth(xs)
-	minWidth := xMaxLength + 20
+	minWidth := xMaxLength + MIN_WIDTH
 	if termWidth < minWidth && width > 0 {
 		log.Fatal("terminal width is too small to render chart\n")
 	}
@@ -80,8 +83,8 @@ func draw(filename string, xs []string, ys []float64) {
 		xlabels = append(xlabels, fmt.Sprintf("%s%s %s ", leading, x, DIV_CHAR))
 	}
 
-	yMaxLength := maxFloatWidth(ys, DECIMAL_PLACES)
-	barWidth := (termWidth - xMaxLength - 3 - yMaxLength - 3)
+	yMaxLength := int(math.Log10(float64(slices.Max(ys))))
+	barWidth := (termWidth - xMaxLength - 3 - yMaxLength - 3 - 1)
 	titleWidth := (termWidth - xMaxLength - 3 - 1)
 	pixelValue := scale(ys, barWidth)
 	title := makeTitle(filename, titleWidth)
@@ -91,7 +94,7 @@ func draw(filename string, xs []string, ys []float64) {
 		// label
 		line := fmt.Sprint(xlabels[i])
 		line += makeBar(y, pixelValue, TEXTURE)
-		line += fmt.Sprintf(fmt.Sprintf(" %%.%df ", DECIMAL_PLACES), y)
+		line += fmt.Sprintf(" %d ", y)
 
 		// fill
 		lineLength := strings.Count(line, "") - 1
@@ -121,58 +124,48 @@ func draw(filename string, xs []string, ys []float64) {
 	}
 }
 
-func makeBar(x float64, pixelValue float64, texture []byte) string {
-	return strings.Repeat(string(texture), int(math.Ceil(x*pixelValue)))
+func makeBar(x int, pixelValue float32, texture []byte) string {
+	return strings.Repeat(string(texture), int(float32(x)*pixelValue))
 }
 
-func checkArgs(args []string) (filename, colName, agg string) {
+func checkArgs(args []string) (filename string, colName int) {
 	filename = args[0]
 	_, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("file does not exist: %v\n", err)
 	}
 
-	colName = args[1]
-
-	agg = args[2]
-	utils.CheckAgg(agg)
-
-	return filename, colName, agg
-}
-
-func processAgg(args []string) ([]string, []float64) {
-	// format custom agg sql
-	var agg string
-	colName := args[1]
-
-	switch args[2] {
-	case utils.COUNT_DISTINCT:
-		agg = fmt.Sprintf("count(distinct #%s)", colName)
-	default:
-		agg = fmt.Sprintf("%s(#%s)", args[2], colName)
+	colName, err = strconv.Atoi(args[1])
+	if err != nil {
+		log.Fatalf("failed to parse colIndex: %v\n", err)
 	}
 
+	return filename, colName
+}
+
+func processAgg(filename string, colIndex int) ([]string, []int) {
 	// read file
 	result, err := utils.Query(
 		fmt.Sprintf(
-			`select #%s, %s as agg from '%s' group by 1 order by agg desc`,
-			colName,
-			agg,
-			args[0],
+			`select #%d, count(#%d) as agg from '%s' group by 1 order by agg desc`,
+			colIndex,
+			colIndex,
+			filename,
 		),
 	)
 	if err != nil {
 		log.Fatalf("failed to process given file: %v", err)
 	}
 
-	xs := make([]string, len(result.Rows))
-	ys := make([]float64, len(result.Rows))
-	for i, row := range result.Rows {
-		xs[i] = row[0]
-		ys[i], err = strconv.ParseFloat(row[1], 64)
-		if err != nil {
-			log.Fatalf("failed to parse aggregate column: %v", err)
+	var xs []string
+	var ys []int
+	for _, row := range result.Rows {
+		xs = append(xs, row[0].(string))
+		y, ok := row[1].(int)
+		if !ok {
+			log.Fatalf("failed to parse aggregate column: %v", row[1])
 		}
+		ys = append(ys, y)
 	}
 
 	return xs, ys
@@ -207,18 +200,8 @@ func maxStringWidth(xs []string) int {
 	return m - 1
 }
 
-func maxFloatWidth(xs []float64, places int) int {
+func scale(xs []int, barWidth int) float32 {
 	largest := slices.Max(xs)
-	digits := 1 + places
-	for largest >= 1 {
-		largest /= 10
-		digits++
-	}
-	return digits
-}
-
-func scale(xs []float64, barWidth int) float64 {
-	largest := slices.Max(xs)
-	pixelValue := (float64(barWidth) / largest)
+	pixelValue := float32(barWidth) / float32(largest)
 	return pixelValue
 }

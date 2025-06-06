@@ -150,6 +150,7 @@ def test_diff_keys():
     assert out.stdout == open("./test/expected/test_diff_keys.txt", mode="rb").read()
 
 
+# dct diff a test/resources/left.csv test/resources/right.csv -m '[{"agg":"mean","left":"b","right":"b"},{"agg":"count_distinct","left":"c","right":"c"}]'
 def test_diff_metric_string():
     out = subprocess.run(
         [
@@ -159,7 +160,7 @@ def test_diff_metric_string():
             "./test/resources/left.csv",
             "./test/resources/right.csv",
             "-m",
-            """{"metrics":[{"agg":"mean","left":"b","right":"b"},{"agg":"count_distinct","left":"c","right":"c"}]}""",
+            """[{"agg":"mean","left":"b","right":"b"},{"agg":"count_distinct","left":"c","right":"c"}]""",
         ],
         capture_output=True,
     )
@@ -170,6 +171,7 @@ def test_diff_metric_string():
     )
 
 
+# dct diff a test/resources/left.csv test/resources/right.csv -m test/resources/metrics.json
 def test_diff_metric_file():
     out = subprocess.run(
         [
@@ -190,6 +192,7 @@ def test_diff_metric_file():
     )
 
 
+# dct diff a test/resources/left.csv test/resources/left.csv -m test/resources/metrics.json -a
 def test_diff_metric_file_all():
     out = subprocess.run(
         [
@@ -197,7 +200,7 @@ def test_diff_metric_file_all():
             "diff",
             "a",
             "./test/resources/left.csv",
-            "./test/resources/right.csv",
+            "./test/resources/left.csv",
             "-m",
             "./test/resources/metrics.json",
             "-a",
@@ -211,6 +214,7 @@ def test_diff_metric_file_all():
     )
 
 
+# dct diff a test/resources/left.csv test/resources/right.csv -m test/resources/metrics.json
 def test_diff_output():
     subprocess.run(
         [

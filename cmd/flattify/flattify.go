@@ -38,9 +38,12 @@ var FlattifyCmd = &cobra.Command{
 	Long:  `Recursively unnest JSON structures to a single layer, with optional SQL output for database use`,
 	Args:  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		payload, ext := parseJsonArgs(args)
-
 		var err error
+		payload, ext, err := parseJsonArgs(args)
+		if e, ok := err.(utils.UnsupportedFileTypeErr); ok {
+			log.Fatalf("error: failed to parseJsonArgs: %v", e)
+		}
+
 		writer = defaultWriter
 		if output != "" {
 			writer, err = os.Create(output)
@@ -66,41 +69,34 @@ var FlattifyCmd = &cobra.Command{
 	},
 }
 
-func parseJsonArgs(args []string) ([][]byte, string) {
+func parseJsonArgs(args []string) ([][]byte, string, error) {
 	if len(args) != 1 {
 		log.Fatalf("Error: expected 1 arg: %v\n", args)
 	}
 
-	rawJson := []byte(args[0])
-	if fs.ValidPath(args[0]) && !json.Valid([]byte(args[0])) {
-		filepath := args[0]
-		file := path.Base(filepath)
-		fileext := strings.ToLower(path.Ext(file))
-
-		f, err := os.Open(filepath)
-		if err != nil {
-			log.Fatalf("failed to open file: %v", err)
+	filepath := args[0]
+	file := path.Base(filepath)
+	fileext := strings.ToLower(path.Ext(file))
+	rawJson, err := os.ReadFile(filepath)
+	if err != nil && !json.Valid([]byte(args[0])) {
+		// not a file or json
+		err := &utils.UnsupportedFileTypeErr{
+			Msg:      "failed to read input json invalid file type",
+			Filename: filepath,
+			Ext:      fileext,
 		}
-		defer f.Close()
-
-		utils.Assert(
-			slices.Contains(utils.FLATTIFY_SUPPORTED_FILETYPES, fileext),
-			"unsupported file type: "+fileext,
-		)
-
-		rawJson, err = io.ReadAll(f)
-		if err != nil {
-			log.Fatalf("failed to read file: %v", err)
-		}
+		return [][]byte{}, "", err
+	} else if err != nil {
+		// valid json
+		rawJson = []byte(args[0])
 	}
 
-	var lines [][]byte
-	var jsonType string
 	jsonType, err := detectJsonType(rawJson)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
+	var lines [][]byte
 	switch jsonType {
 	case utils.JSON:
 		lines = append(lines, rawJson)
@@ -111,7 +107,7 @@ func parseJsonArgs(args []string) ([][]byte, string) {
 		}
 	}
 
-	return lines, jsonType
+	return lines, jsonType, nil
 }
 
 func flattifyJson(obj any) []Tuple {

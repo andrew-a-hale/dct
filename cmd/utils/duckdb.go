@@ -3,17 +3,18 @@ package utils
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 	"reflect"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/marcboeker/go-duckdb"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
+
+	_ "github.com/marcboeker/go-duckdb"
 )
+
+var style = lipgloss.NewStyle().Align(lipgloss.Center)
 
 type Header struct {
 	Name string
@@ -22,7 +23,7 @@ type Header struct {
 
 type Result struct {
 	Headers []Header
-	Rows    [][]string
+	Rows    [][]any
 }
 
 func CheckFileHasRows(file string) (bool, error) {
@@ -59,7 +60,7 @@ func Execute(query string) error {
 func Query(query string) (Result, error) {
 	conn, err := sql.Open("duckdb", "")
 	if err != nil {
-		return Result{}, err
+		return Result{}, fmt.Errorf("failed to query duckdb: %v", err)
 	}
 	defer conn.Close()
 
@@ -78,7 +79,7 @@ func Query(query string) (Result, error) {
 		headers = append(headers, Header{col.Name(), col.DatabaseTypeName()})
 	}
 
-	var out [][]string
+	var out [][]any
 	vals := make([]any, len(cols))
 
 	row := 0
@@ -92,45 +93,31 @@ func Query(query string) (Result, error) {
 			return Result{}, err
 		}
 
-		var tmp []string
+		var tmp []any
 		for _, v := range vals {
-			if s, ok := v.(*any); ok {
-				if *s == nil {
-					tmp = append(tmp, string("NULL"))
-				} else if x, ok := (*s).(string); ok {
-					tmp = append(tmp, x)
-				} else if x, ok := (*s).(int32); ok {
-					tmp = append(tmp, fmt.Sprintf("%d", x))
-				} else if x, ok := (*s).(int64); ok {
-					tmp = append(tmp, fmt.Sprintf("%d", x))
-				} else if x, ok := (*s).(*big.Int); ok {
-					tmp = append(tmp, fmt.Sprintf("%d", x))
-				} else if x, ok := (*s).(float64); ok {
-					tmp = append(tmp, fmt.Sprintf("%f", x))
-				} else if x, ok := (*s).(bool); ok {
-					tmp = append(tmp, strconv.FormatBool(x))
-				} else if x, ok := (*s).(time.Time); ok {
-					tmp = append(tmp, x.String())
-				} else if x, ok := (*s).(duckdb.Decimal); ok {
-					b := x.Value.String()
-					sb := b[:x.Scale] + "." + b[x.Scale:]
-					tmp = append(tmp, string(sb))
-				} else if x, ok := (*s).([]any); ok { // json array
-					j, err := json.Marshal(x)
-					if err != nil {
-						return Result{}, err
-					}
-					tmp = append(tmp, string(j))
-				} else if x, ok := (*s).(map[string]any); ok { // json object
-					j, err := json.Marshal(x)
-					if err != nil {
-						return Result{}, err
-					}
-					tmp = append(tmp, string(j))
-				} else {
-					err := fmt.Errorf("type `%v` not implemented yet", reflect.TypeOf(*s))
-					return Result{}, err
-				}
+			deref := reflect.Indirect(reflect.ValueOf(v)).Interface()
+			switch deref.(type) {
+			case nil:
+				tmp = append(tmp, nil)
+			case string:
+				tmp = append(tmp, deref.(string))
+			case bool:
+				tmp = append(tmp, deref.(bool))
+			case int:
+				tmp = append(tmp, deref.(int))
+			case int32:
+				tmp = append(tmp, int(deref.(int32)))
+			case int64:
+				tmp = append(tmp, int(deref.(int64))) // demote to architecture
+			case float32:
+				tmp = append(tmp, deref.(float32))
+			case float64:
+				tmp = append(tmp, deref.(float64))
+			default:
+				return Result{}, fmt.Errorf(
+					"failed to serialise rows from duckdb, type `%T` not implemented yet",
+					deref,
+				)
 			}
 		}
 
@@ -141,7 +128,7 @@ func Query(query string) (Result, error) {
 	return Result{headers, out}, nil
 }
 
-func (result Result) ToCsv(writer io.Writer) error {
+func (result *Result) ToCsv(writer io.Writer) error {
 	var headers []string
 	for _, header := range result.Headers {
 		headers = append(headers, header.Name)
@@ -153,11 +140,60 @@ func (result Result) ToCsv(writer io.Writer) error {
 	}
 
 	for _, row := range result.Rows {
-		rs := strings.Join(row, ",")
+		var tmp []string
+		for _, v := range row {
+			tmp = append(tmp, fmt.Sprintf("%v", v))
+		}
+		rs := strings.Join(tmp, ",")
 		if _, err := fmt.Fprintln(writer, rs); err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (r *Result) RowsToString() [][]string {
+	var rows [][]string
+
+	for _, r := range r.Rows {
+		var row []string
+		for _, v := range r {
+			row = append(row, fmt.Sprintf("%v", v))
+		}
+		rows = append(rows, row)
+	}
+
+	return rows
+}
+
+func (result *Result) Render(writer io.Writer, maxRows int) error {
+	var headers []string
+	var types []string
+	for _, header := range result.Headers {
+		headers = append(headers, header.Name)
+		types = append(types, header.Type)
+	}
+
+	t := table.New().
+		Border(lipgloss.RoundedBorder()).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch row {
+			case 3:
+				// force border after type row in display
+				return style.
+					Border(lipgloss.NormalBorder(), true, false, false, false)
+			default:
+				return style
+			}
+		}).
+		Rows(headers).
+		Rows(types)
+
+	rowsToDisplay := min(maxRows, len(result.Rows))
+
+	t.Rows(result.RowsToString()[:rowsToDisplay]...)
+
+	fmt.Println(t)
 	return nil
 }

@@ -75,7 +75,7 @@ func analyse(result utils.Result, writer io.Writer) {
 	for i := range len(result.Headers) {
 		var col []string
 		for _, row := range result.Rows {
-			col = append(col, row[i])
+			col = append(col, fmt.Sprintf("%v", row[i]))
 		}
 		// writes directly to ouput
 		analyseField(result.Headers[i].Name, col, writer)

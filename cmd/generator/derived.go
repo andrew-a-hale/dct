@@ -12,7 +12,6 @@ import (
 type DerivedField struct {
 	Field    string `json:"field"`
 	Source   string `json:"source"`
-	DataType string `json:"data_type"`
 	Config   struct {
 		Expression string   `json:"expression"`
 		Fields     []string `json:"fields"`
