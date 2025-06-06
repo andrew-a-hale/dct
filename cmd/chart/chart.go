@@ -63,7 +63,6 @@ func draw(filename string, xs []string, ys []int) {
 	termWidth, _, err := term.GetSize(int(os.Stdin.Fd()))
 	if err != nil {
 		termWidth = 50
-		log.Fatalf("failed to get terminal size: %v\n", err)
 	}
 
 	xMaxLength := maxStringWidth(xs)
@@ -160,7 +159,7 @@ func processAgg(filename string, colIndex int) ([]string, []int) {
 	var xs []string
 	var ys []int
 	for _, row := range result.Rows {
-		xs = append(xs, row[0].(string))
+		xs = append(xs, fmt.Sprintf("%v", row[0]))
 		y, ok := row[1].(int)
 		if !ok {
 			log.Fatalf("failed to parse aggregate column: %v", row[1])

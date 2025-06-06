@@ -239,7 +239,7 @@ def test_diff_output():
 
 
 def test_chart():
-    subprocess.run(
+    out = subprocess.run(
         [
             "./dct",
             "chart",
@@ -247,13 +247,13 @@ def test_chart():
             "50",
             "./test/resources/left.csv",
             "1",
-            "count",
         ],
         capture_output=True,
     )
 
     # skip
-    assert True
+    assert out.stderr == b""
+    assert out.stdout != b""
 
 
 def test_version():
@@ -263,6 +263,7 @@ def test_version():
     )
 
     assert out.stderr == b""
+    assert out.stdout != b""
 
 
 def test_generator():
@@ -294,6 +295,8 @@ def test_flattify_ndjson():
 
     # map isn't sorted
     assert out.stderr == b""
+    assert out.stdout != b""
+
 
 def test_flattify_json_file():
     out = subprocess.run(
@@ -307,6 +310,7 @@ def test_flattify_json_file():
 
     # map isn't sorted
     assert out.stderr == b""
+    assert out.stdout != b""
     
 def test_flattify_json():
     out = subprocess.run(
@@ -325,6 +329,8 @@ def test_flattify_json():
 
     # map isn't sorted
     assert out.stderr == b""
+    assert out.stdout != b""
+
 
 def test_flattify_json_array():
     out = subprocess.run(
@@ -337,6 +343,7 @@ def test_flattify_json_array():
     )
 
     # map isn't sorted
+    assert out.stdout != b""
     assert out.stderr == b""
 
 def test_flattify_json_array_sql():
@@ -366,6 +373,7 @@ def test_flattify_json_object_digit_key():
 
     # map isn't sorted
     assert out.stderr == b""
+    assert out.stdout != b""
 
 def test_flattify_json_object_digit_key_sql():
     out = subprocess.run(
