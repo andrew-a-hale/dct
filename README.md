@@ -1,10 +1,12 @@
 # DCT (Data Check Tool)
 
-A Swiss army knife for data engineers to quickly inspect, compare, and generate flat files.
+A Swiss army knife for data engineers to quickly inspect, compare, and generate
+flat files.
 
 ## Overview
 
-DCT provides a collection of command-line utilities for working with CSV, JSON, NDJSON, and Parquet files:
+DCT provides a collection of command-line utilities for working with CSV, JSON,
+NDJSON, and Parquet files:
 
 - **Peek**: Preview file contents
 - **Diff**: Compare files with key matching and aggregates
