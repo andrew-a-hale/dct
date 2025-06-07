@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"dct/cmd/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -165,6 +164,10 @@ func flattify(payload [][]byte, writer io.Writer, writerFunc func(any, io.Writer
 func flattifyLines(payload [][]byte, writer io.Writer, writerFunc func(any, io.Writer)) {
 	var lines [][]Tuple
 	for _, line := range payload {
+		if len(line) == 0 {
+			break
+		}
+
 		var j any
 		json.Unmarshal(line, &j)
 		lines = append(lines, flattifyJson(j))
@@ -304,8 +307,8 @@ func detectJsonType(content []byte) (string, error) {
 	}
 
 	for _, line := range lines {
-		if !json.Valid(line) {
-			return "", errors.New("invalid json")
+		if !json.Valid(line) && len(line) > 0 {
+			return "", fmt.Errorf("invalid json: %v", line)
 		}
 	}
 
