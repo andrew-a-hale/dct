@@ -107,7 +107,7 @@ func Query(query string) (Result, error) {
 			case int:
 				tmp = append(tmp, deref.(int))
 			case int32:
-				tmp = append(tmp, int(deref.(int32)))
+				tmp = append(tmp, int(deref.(int32))) // demote to architecture
 			case int64:
 				tmp = append(tmp, int(deref.(int64))) // demote to architecture
 			case float32:
@@ -175,6 +175,7 @@ func (r *Result) RowsToString() [][]string {
 }
 
 func (result *Result) Render(writer io.Writer, maxRows int) error {
+	// TODO: handle wide tables!
 	var headers []string
 	var types []string
 	for _, header := range result.Headers {
