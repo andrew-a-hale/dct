@@ -13,5 +13,5 @@ select
 	, json."values"[3]."a"::decimal
 	, json."values"[3]."b"::decimal
 	, json."values"[4]."a"::decimal
-	, json."values"[4]."b"::decimal
+	, json."values"[4]."b"::varchar
 from read_json_objects('test/resources/flattify.json', format='unstructured') as json

@@ -273,7 +273,7 @@ def test_generator():
             "gen",
             "test/resources/generator-schema.json",
         ],
-        capture_output=True
+        capture_output=True,
     )
 
     # can't test the random data? need to implement rng seed
@@ -311,7 +311,8 @@ def test_flattify_json_file():
     # map isn't sorted
     assert out.stderr == b""
     assert out.stdout != b""
-    
+
+
 def test_flattify_json():
     out = subprocess.run(
         [
@@ -322,7 +323,7 @@ def test_flattify_json():
                 "b": {
                     "a": 1
                 }
-            }"""
+            }""",
         ],
         capture_output=True,
     )
@@ -334,40 +335,32 @@ def test_flattify_json():
 
 def test_flattify_json_array():
     out = subprocess.run(
-        [
-            "./dct",
-            "flattify",
-            """[ 1, 2 ]"""
-        ],
+        ["./dct", "flattify", """[ 1, 2 ]"""],
         capture_output=True,
     )
 
     # map isn't sorted
     assert out.stdout != b""
     assert out.stderr == b""
+
 
 def test_flattify_json_array_sql():
     out = subprocess.run(
-        [
-            "./dct",
-            "flattify",
-            "-s",
-            """[ 1, 2 ]"""
-        ],
+        ["./dct", "flattify", "-s", """[ 1, 2 ]"""],
         capture_output=True,
     )
 
     # map isn't sorted
     assert out.stderr == b""
-    assert out.stdout == open("./test/expected/test_flattify_json_array.sql", mode="rb").read()
+    assert (
+        out.stdout
+        == open("./test/expected/test_flattify_json_array.sql", mode="rb").read()
+    )
+
 
 def test_flattify_json_object_digit_key():
     out = subprocess.run(
-        [
-            "./dct",
-            "flattify",
-            """{"0": [ 1, 2 ]}"""
-        ],
+        ["./dct", "flattify", """{"0": [ 1, 2 ]}"""],
         capture_output=True,
     )
 
@@ -375,20 +368,21 @@ def test_flattify_json_object_digit_key():
     assert out.stderr == b""
     assert out.stdout != b""
 
+
 def test_flattify_json_object_digit_key_sql():
     out = subprocess.run(
-        [
-            "./dct",
-            "flattify",
-            "-s",
-            """{"0": [ 1, 2 ]}"""
-        ],
+        ["./dct", "flattify", "-s", """{"0": [ 1, 2 ]}"""],
         capture_output=True,
     )
 
     # map isn't sorted
     assert out.stderr == b""
-    assert out.stdout == open("./test/expected/test_flattify_json_object_digit_key.sql", mode="rb").read()
+    assert (
+        out.stdout
+        == open(
+            "./test/expected/test_flattify_json_object_digit_key.sql", mode="rb"
+        ).read()
+    )
 
 
 def test_flattify_ndjson_select():
@@ -403,7 +397,11 @@ def test_flattify_ndjson_select():
     )
 
     assert out.stderr == b""
-    assert out.stdout == open("./test/expected/test_flattify_ndjson_select.sql", mode="rb").read()
+    assert (
+        out.stdout
+        == open("./test/expected/test_flattify_ndjson_select.sql", mode="rb").read()
+    )
+
 
 def test_flattify_json_select():
     out = subprocess.run(
@@ -417,7 +415,10 @@ def test_flattify_json_select():
     )
 
     assert out.stderr == b""
-    assert out.stdout == open("./test/expected/test_flattify_json_select.sql", mode="rb").read()
+    assert (
+        out.stdout
+        == open("./test/expected/test_flattify_json_select.sql", mode="rb").read()
+    )
 
 
 @pytest.mark.parametrize("filetype", PROFILE_SUPPORTED_FILE_TYPES)
@@ -430,3 +431,4 @@ def test_prof(filetype: str):
     # output is not ordered!
     assert out.stderr == b""
     assert out.stdout != b""
+
