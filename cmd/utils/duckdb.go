@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -113,6 +114,12 @@ func Query(query string) (Result, error) {
 				tmp = append(tmp, deref.(float32))
 			case float64:
 				tmp = append(tmp, deref.(float64))
+			case time.Time:
+				tmp = append(tmp, deref.(time.Time))
+			case []any:
+				tmp = append(tmp, deref.([]any))
+			case map[string]any:
+				tmp = append(tmp, deref.(map[string]any))
 			default:
 				return Result{}, fmt.Errorf(
 					"failed to serialise rows from duckdb, type `%T` not implemented yet",
