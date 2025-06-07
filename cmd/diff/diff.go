@@ -197,13 +197,14 @@ select %s, l_cnt, r_cnt, coalesce(l_cnt = r_cnt, false) as cnt_eq, %s
 from file1
 full join file2 using (%s)
 where l_cnt <> r_cnt %s
-order by cnt_eq`,
+order by %s`,
 		leftSql,
 		rightSql,
 		leftKeys,
 		mainMetrics,
 		leftKeys,
 		checkMetrics,
+		leftKeys,
 	)
 
 	return sql
