@@ -15,21 +15,27 @@ func TestNewJsonSchema(t *testing.T) {
     "age": { "type": "integer" }
   }
 }`)
+
 	var j JsonSchema
 	err := json.Unmarshal(raw, &j)
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
+	}
 }
 
 // upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, age_year int )
+// create table schema.release_schema ( id varchar primary key, name varchar, age row(year int) )
 func TestNewJsonSchemaComplex(t *testing.T) {
 	raw := []byte(`{
   "type": "object",
   "properties": {
     "name": { "type": "string" },
-    "age": { "type": "object", "properties": { "year": { "type": int } } }
+    "age": { "type": "object", "properties": { "year": { "type": "integer" } } }
   }
 }`)
 	var j JsonSchema
@@ -48,6 +54,11 @@ func TestNewJsonSchemaComplex(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
+	}
 }
 
 // upgrade these to create sql definitions
@@ -57,7 +68,7 @@ func TestNewJsonSchemaReference(t *testing.T) {
   "type": "object",
   "properties": {
     "name": { "type": "string" },
-    "age": { "$ref": "#/properties/name" } 
+    "age": { "$ref": "#/properties/name" }
   }
 }`)
 
@@ -66,11 +77,15 @@ func TestNewJsonSchemaReference(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
+	}
 }
 
-// upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, address_street varchar, address_city varchar )
-func TestNewJsonSchemaReferenceComplexDenormalised(t *testing.T) {
+// create table schema.release_schema ( id varchar primary key, name varchar, home row(street varchar, city varchar) )
+func TestNewJsonSchemaReferenceComplex(t *testing.T) {
 	raw := []byte(`{
   "type": "object",
   "properties": {
@@ -93,79 +108,93 @@ func TestNewJsonSchemaReferenceComplexDenormalised(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
+	}
 }
 
-// upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, address_id string )
-// create table schema.release_schema_addresses ( address_id string primary key, address_street string, address_city string )
-func TestNewJsonSchemaReferenceComplexNormalised(t *testing.T) {
+// create table schema.release_schema ( id varchar primary key, name varchar, houses array(row(street varchar, city varchar)) )
+func TestNewJsonSchemaReferenceComplexalisedArray(t *testing.T) {
 	raw := []byte(`{
-  "type": "object",
-  "properties": {
-    "name": { "type": "string" },
-    "home": { "$ref": "#/definitions/address" }
-  },
-  "definitions": {
-    "address": {
-      "type": "object",
-      "properties": {
-        "street": { "type": "string" },
-        "city": { "type": "string" }
-      }
-    }
-  }
-}`)
+   "type": "object",
+   "properties": {
+     "name": { "type": "string" },
+     "houses": { "type": "array", "properties": { "address": { "$ref": "#/definitions/address" } } }
+   },
+   "definitions": {
+     "address": {
+       "type": "object",
+       "properties": {
+         "street": { "type": "string" },
+         "city": { "type": "string" }
+       }
+     }
+   }
+ }`)
 
 	var j JsonSchema
 	err := json.Unmarshal(raw, &j)
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
-}
 
-// upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, address_id string )
-// create table schema.release_schema_addresses ( address_id string primary key, address_street string, address_city string )
-func TestNewJsonSchemaReferenceComplexNormalisedArray(t *testing.T) {
-	raw := []byte(`{
-  "type": "object",
-  "properties": {
-    "name": { "type": "string" },
-    "houses": { "type": "array", "properties": { "address": { "$ref": "#/definitions/address" } } }
-  },
-  "definitions": {
-    "address": {
-      "type": "object",
-      "properties": {
-        "street": { "type": "string" },
-        "city": { "type": "string" }
-      }
-    }
-  }
-}`)
-
-	var j JsonSchema
-	err := json.Unmarshal(raw, &j)
+	_, err = process(raw)
 	if err != nil {
-		t.Errorf("failed to unmarshal json: %v", err)
+		t.Errorf("failed to process json: %v", err)
 	}
 }
 
-// upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, address_id string )
-// create table schema.release_schema_addresses ( address_id string primary key, address string )
+// create table schema.release_schema ( id varchar primary key, name varchar, houses array(address row(street varchar, city varchar) )
 func TestNewJsonSchemaReferenceArray(t *testing.T) {
 	raw := []byte(`{
-  "type": "object",
-  "properties": {
-    "name": { "type": "string" },
-    "houses": { "type": "array", "properties": { "address": { "type": "string" } } }
-  }
-}`)
+   "type": "object",
+   "properties": {
+     "name": { "type": "string" },
+     "houses": { "type": "array", "properties": { "address": { "$ref": "#/definitions/address" } } }
+   },
+   "definitions": {
+     "address": {
+       "type": "object",
+       "properties": {
+         "street": { "type": "string" },
+         "city": { "type": "string" }
+       }
+     }
+   }
+ }`)
 
 	var j JsonSchema
 	err := json.Unmarshal(raw, &j)
 	if err != nil {
 		t.Errorf("failed to unmarshal json: %v", err)
+	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
+	}
+}
+
+// create table schema.release_schema ( id varchar primary key, name varchar, houses row(address varchar) )
+func TestNewJsonSchemaNestedArray(t *testing.T) {
+	raw := []byte(`{
+   "type": "object",
+   "properties": {
+     "name": { "type": "string" },
+     "houses": { "type": "array", "properties": { "address": { "type": "string" } } }
+   }
+ }`)
+
+	var j JsonSchema
+	err := json.Unmarshal(raw, &j)
+	if err != nil {
+		t.Errorf("failed to unmarshal json: %v", err)
+	}
+
+	_, err = process(raw)
+	if err != nil {
+		t.Errorf("failed to process json: %v", err)
 	}
 }
