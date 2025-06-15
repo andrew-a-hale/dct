@@ -22,9 +22,19 @@ func TestNewJsonSchema(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
+	}
+
+	expected := `\
+create table test (
+  id varchar primary key
+  , name varchar
+  , age int
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
 	}
 }
 
@@ -55,14 +65,22 @@ func TestNewJsonSchemaComplex(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
 	}
+
+	expected := `\
+create table test (
+  id varchar primary key
+  , name varchar
+  , age row(year int)
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
+	}
 }
 
-// upgrade these to create sql definitions
-// create table schema.release_schema ( id varchar primary key, name varchar, age varchar )
 func TestNewJsonSchemaReference(t *testing.T) {
 	raw := []byte(`{
   "type": "object",
@@ -78,13 +96,22 @@ func TestNewJsonSchemaReference(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
 	}
+
+	expected := `\
+create table test (
+  id varchar primary key
+  , name varchar
+  , age varchar
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
+	}
 }
 
-// create table schema.release_schema ( id varchar primary key, name varchar, home row(street varchar, city varchar) )
 func TestNewJsonSchemaReferenceComplex(t *testing.T) {
 	raw := []byte(`{
   "type": "object",
@@ -109,44 +136,22 @@ func TestNewJsonSchemaReferenceComplex(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
 	}
-}
 
-// create table schema.release_schema ( id varchar primary key, name varchar, houses array(row(street varchar, city varchar)) )
-func TestNewJsonSchemaReferenceComplexalisedArray(t *testing.T) {
-	raw := []byte(`{
-   "type": "object",
-   "properties": {
-     "name": { "type": "string" },
-     "houses": { "type": "array", "properties": { "address": { "$ref": "#/definitions/address" } } }
-   },
-   "definitions": {
-     "address": {
-       "type": "object",
-       "properties": {
-         "street": { "type": "string" },
-         "city": { "type": "string" }
-       }
-     }
-   }
- }`)
-
-	var j JsonSchema
-	err := json.Unmarshal(raw, &j)
-	if err != nil {
-		t.Errorf("failed to unmarshal json: %v", err)
-	}
-
-	_, err = process(raw)
-	if err != nil {
-		t.Errorf("failed to process json: %v", err)
+	expected := `\
+create table test (
+  id varchar primary key
+  , name varchar
+  , home row(street varchar, city varchar)
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
 	}
 }
 
-// create table schema.release_schema ( id varchar primary key, name varchar, houses array(address row(street varchar, city varchar) )
 func TestNewJsonSchemaReferenceArray(t *testing.T) {
 	raw := []byte(`{
    "type": "object",
@@ -171,13 +176,22 @@ func TestNewJsonSchemaReferenceArray(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
 	}
+
+	expected := `\
+create table test (
+  id varchar primary key
+  , name varchar
+  , houses array(row(street varchar, city varchar))
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
+	}
 }
 
-// create table schema.release_schema ( id varchar primary key, name varchar, houses row(address varchar) )
 func TestNewJsonSchemaNestedArray(t *testing.T) {
 	raw := []byte(`{
    "type": "object",
@@ -193,8 +207,17 @@ func TestNewJsonSchemaNestedArray(t *testing.T) {
 		t.Errorf("failed to unmarshal json: %v", err)
 	}
 
-	_, err = process(raw)
+	sql, err := process(raw)
 	if err != nil {
 		t.Errorf("failed to process json: %v", err)
+	}
+
+	expected := `create table test (
+        id varchar primary key
+        , name varchar
+        , houses array(row(address varchar))
+)`
+	if sql != expected {
+		t.Errorf("invalid sql generated:\n`%v`\nexpected:\n`%v`", sql, expected)
 	}
 }

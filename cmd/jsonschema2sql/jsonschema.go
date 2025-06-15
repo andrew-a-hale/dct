@@ -28,7 +28,7 @@ const (
 
 var (
 	jsonToSqlMap = make(map[string]string)
-	logLevel     = slog.LevelInfo
+	logLevel     = slog.LevelDebug
 )
 
 // setup logger and jsonToSqlMap
@@ -62,11 +62,43 @@ type Field struct {
 	Array bool
 }
 
-type SqlDef map[string][]Field
+func fieldsToDef(fields []Field) (string, error) {
+	var sqlDef string
 
-func (s SqlDef) ToSql() (string, error) {
-	return "", nil
+	tree := BuildTree(fields)
+
+	var stack utils.Stack[*TreeNode]
+	stack.Push(tree)
+	slog.Debug("build sql", "tree", tree, "stack", stack)
+
+	sqlDef += "create table %s (\n\tid varchar primary key"
+	for stack.Len() > 0 {
+		node := stack.Pop()
+		if node.IsLeaf {
+			sqlDef += fmt.Sprintf("\n\t, %s %s", node.Id, node.Type)
+		} else if node.IsArray {
+			sqlDef += fmt.Sprintf("\n\t, %s array(%s)", node.Id, node.Type)
+		}
+
+		for _, c := range node.Children {
+			stack.Push(c)
+		}
+	}
+	sqlDef += "\n)"
+	sqlDef = fmt.Sprintf(sqlDef, "test")
+
+	return sqlDef, nil
 }
+
+// Example
+//
+// create table schema.table (
+//
+//	id varchar primary key,
+//	name varchar,
+//	houses array(address row(street varchar, city varchar)
+//
+// )
 
 type PropertyPath struct {
 	Path     []string
@@ -74,11 +106,11 @@ type PropertyPath struct {
 	IsArray  bool
 }
 
-func process(data []byte) (SqlDef, error) {
+func process(data []byte) (string, error) {
 	var j JsonSchema
 	err := json.Unmarshal(data, &j)
 	if err != nil {
-		return SqlDef{}, err
+		return "", err
 	}
 
 	var stack utils.Stack[PropertyPath]
@@ -104,12 +136,13 @@ func process(data []byte) (SqlDef, error) {
 			stack.Push(prop)
 		case JSON_ARRAY:
 			props, _ := handleArray(path, property)
+			kv.IsArray = true
 			stack.Push(props...)
 		case JSON_OBJECT:
 			props := make(map[string]Property)
 			err := json.Unmarshal(property.Properties, &props)
 			if err != nil {
-				return SqlDef{}, err
+				return "", err
 			}
 			for k, v := range props {
 				stack.Push(PropertyPath{append(path, k), v, isArray})
@@ -117,13 +150,11 @@ func process(data []byte) (SqlDef, error) {
 		case JSON_NUMBER, JSON_STRING, JSON_INTEGER, JSON_BOOLEAN:
 			fields = append(fields, Field{path, jsonToSqlMap[property.Type.(string)], isArray})
 		default:
-			return SqlDef{}, fmt.Errorf("failed to process jsonschema: type %v not implemented", property.Type)
+			return "", fmt.Errorf("failed to process jsonschema: type %v not implemented", property.Type)
 		}
 	}
 
-	fmt.Printf("%+v\n", fields)
-
-	return SqlDef{}, nil
+	return fieldsToDef(fields)
 }
 
 func followReference(path []string, ref string, data *JsonSchema, fromArray bool) (PropertyPath, error) {
