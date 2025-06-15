@@ -1,0 +1,5 @@
+create table test (
+    id varchar primary key,
+    items array(row(name varchar, price double)),
+    user row(email varchar, name varchar)
+);

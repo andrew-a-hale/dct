@@ -1,0 +1,7 @@
+create table test (
+    id varchar primary key,
+    active boolean,
+    created_at timestamp,
+    name varchar,
+    score double
+);

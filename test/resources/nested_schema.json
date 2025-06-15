@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": "string"
+            },
+            "notifications": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["id"]
+}

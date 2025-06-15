@@ -1,0 +1,4 @@
+create table test (
+    id varchar primary key,
+    user row(email varchar, name varchar, preferences row(notifications boolean, theme varchar))
+);

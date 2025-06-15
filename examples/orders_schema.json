@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "integer"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/OrderItem"
+      }
+    }
+  },
+  "$defs": {
+    "OrderItem": {
+      "type": "object",
+      "properties": {
+        "product_id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "quantity": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

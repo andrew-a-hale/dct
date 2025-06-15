@@ -6,6 +6,7 @@ import (
 	"dct/cmd/diff"
 	"dct/cmd/flattify"
 	"dct/cmd/generator"
+	"dct/cmd/js2sql"
 	"dct/cmd/peek"
 	"dct/cmd/profile"
 	"dct/cmd/version"
@@ -29,6 +30,7 @@ func init() {
 	rootCmd.AddCommand(generator.GenCmd)
 	rootCmd.AddCommand(flattify.FlattifyCmd)
 	rootCmd.AddCommand(profile.ProfileCmd)
+	rootCmd.AddCommand(js2sql.Js2SqlCmd)
 }
 
 func Execute() {

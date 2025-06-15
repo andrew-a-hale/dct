@@ -432,3 +432,116 @@ def test_prof(filetype: str):
     assert out.stderr == b""
     assert out.stdout != b""
 
+
+def test_js2sql_simple():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/simple_schema.json"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert (
+        out.stdout == open("./test/expected/test_js2sql_simple.txt", mode="rb").read()
+    )
+
+
+def test_js2sql_array():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/array_schema.json"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_js2sql_array.txt", mode="rb").read()
+
+
+def test_js2sql_arraytype():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/array_type_schema.json"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert (
+        out.stdout
+        == open("./test/expected/test_js2sql_array_type.txt", mode="rb").read()
+    )
+
+
+def test_js2sql_nested():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/nested_schema.json"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert (
+        out.stdout == open("./test/expected/test_js2sql_nested.txt", mode="rb").read()
+    )
+
+
+def test_js2sql_ref():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/ref_schema.json"],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert out.stdout == open("./test/expected/test_js2sql_ref.txt", mode="rb").read()
+
+
+def test_js2sql_custom_table():
+    out = subprocess.run(
+        [
+            "./dct",
+            "js2sql",
+            "./test/resources/simple_schema.json",
+            "-t",
+            "custom_table",
+        ],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert b"create table custom_table" in out.stdout
+
+
+def test_js2sql_output_file():
+    output_path = "./tmp_test_js2sql_output.sql"
+
+    # Clean up any previous test file
+    if os.path.exists(output_path):
+        os.remove(output_path)
+
+    out = subprocess.run(
+        [
+            "./dct",
+            "js2sql",
+            "./test/resources/simple_schema.json",
+            "-o",
+            output_path,
+        ],
+        capture_output=True,
+    )
+
+    assert out.stderr == b""
+    assert os.path.exists(output_path)
+
+    with open(output_path, "rb") as f:
+        content = f.read()
+        assert (
+            content == open("./test/expected/test_js2sql_simple.txt", mode="rb").read()
+        )
+
+    # Clean up
+    os.remove(output_path)
+
+
+def test_js2sql_invalid_schema():
+    out = subprocess.run(
+        ["./dct", "js2sql", "./test/resources/non_existent.json"],
+        capture_output=True,
+    )
+
+    assert out.returncode != 0
+    assert b"Error reading file" in out.stderr

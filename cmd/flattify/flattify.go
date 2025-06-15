@@ -17,6 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	TAB = "    "
+)
+
 type Tuple [2]any
 
 var (
@@ -244,7 +248,7 @@ func writeSelectStatement(line any, writer io.Writer) {
 	slices.Sort(keys)
 
 	for i, k := range keys {
-		fmt.Fprint(writer, "\t")
+		fmt.Fprint(writer, TAB)
 		if i == 0 {
 			fmt.Fprintf(writer, `%s::%s`, k, paths[k])
 		} else {
@@ -279,7 +283,7 @@ func writeMergedSelectStatement(lines any, writer io.Writer) {
 
 	fmt.Fprint(writer, "select\n")
 	for i, k := range keys {
-		fmt.Fprint(writer, "\t")
+		fmt.Fprint(writer, TAB)
 		if i == 0 {
 			fmt.Fprintf(writer, `%s::%s`, k, paths[k])
 		} else {

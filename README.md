@@ -13,6 +13,7 @@ NDJSON, and Parquet files:
 - **Chart**: Generate simple visualisations from data files
 - **Generator**: Generate synthetic data with customisable schemas
 - **Flattify**: Convert nested JSON structures to flat formats or SQL
+- **JS2SQL**: Convert JSON Schema to SQL CREATE TABLE statements
 - **Prof**: Profile data files for values and characters
 
 ## Commands
@@ -80,15 +81,15 @@ Flags:
   -w, --width int32   Width of the chart in characters
 
 Examples
-dct chart -w 50 examples/chart.csv 1
+dct chart -w 65 examples/chart.csv 1
 
-            ┌─ histogram of 'chart.csv' ─────────┐
-        xyz ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 42.00 │
-        bcd ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 24.00             │
-        abc ┤ ╍╍╍╍╍╍╍╍╍╍╍╍ 18.00                 │
-        123 ┤ ╍╍╍╍ 6.00                          │
-23467w81234 ┤ ╍ 1.00                             │
-            └────────────────────────────────────┘
+            ┌─ histogram of 'examples/chart.csv' ───────────────┐
+        xyz ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 42 │
+        bcd ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 24                     │
+        abc ┤ ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍ 18                            │
+        123 ┤ ╍╍╍╍╍╍ 6                                          │
+23467w81234 ┤ ╍ 1                                               │
+            └───────────────────────────────────────────────────┘
 ```
 
 ### Generator
@@ -128,7 +129,7 @@ dct flattify <json file or json> [flags]
   -o, --output <file>    Output to file (default stdout)
 
 Examples
-dct flattify '[ 1, {"value": {"nested": [0, 1]}}]'
+dct flattify '[1, {"value": {"nested": [0, 1]}}]'
 
 {
   "$[0]": 1,
@@ -136,13 +137,32 @@ dct flattify '[ 1, {"value": {"nested": [0, 1]}}]'
   "$[1]['value']['nested'][1]": 1
 }
 
-dct flattify '[ 1, {"value": {"nested": [0, 1]}}]' -s
+dct flattify '[1, {"value": {"nested": [0, 1]}}]' -s
 
 select
         json[0]::decimal
         , json[1]."value"."nested"[0]::decimal
         , json[1]."value"."nested"[1]::decimal
-from (select '[ 1, {"value": {"nested": [0, 1]}}]'::json as json)
+from (select '[1, {"value": {"nested": [0, 1]}}]'::json as json)
+```
+
+### JS2SQL
+
+Convert JSON Schema to SQL CREATE TABLE statements:
+
+```bash
+dct js2sql <schema file> [flags]
+  -o, --output <file>    Output to file (default stdout)
+  -t, --table <name>     Table name (default "test")
+
+Examples
+dct js2sql examples/orders_schema.json
+
+create table test (
+    id varchar primary key,
+    items array(row(name varchar, price double, product_id integer, quantity integer)),
+    order_id integer
+);
 ```
 
 ### Profile
