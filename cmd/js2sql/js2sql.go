@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -71,26 +72,20 @@ var Js2SqlCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		data, err := os.ReadFile(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-			os.Exit(1)
+			log.Fatalf("Error reading file: %v\n", err)
+		}
+
+		writer = defaultWriter
+		if output != "" {
+			writer, err = os.Create(output)
+			if err != nil {
+				log.Printf("Warning: failed to create out file defaulting to %v\n", defaultWriter)
+			}
 		}
 
 		sql, err := process(data, tableName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error processing schema: %v\n", err)
-			os.Exit(1)
-		}
-
-		if output == "" {
-			writer = defaultWriter
-		} else {
-			f, err := os.Create(output)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)
-				os.Exit(1)
-			}
-			defer f.Close()
-			writer = f
+			log.Fatalf("Error processing schema: %v\n", err)
 		}
 
 		fmt.Fprintln(writer, sql)
