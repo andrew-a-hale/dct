@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"dct-mcp-server/server"
 	"fmt"
 	"log"
 	"os"
@@ -22,7 +23,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	server := NewMCPServer(dctPath)
+	server := server.NewMCPServer(dctPath)
 
 	log.Printf("Starting DCT MCP Server with DCT binary at: %s", dctPath)
 
@@ -30,4 +31,3 @@ func main() {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
-

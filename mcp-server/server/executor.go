@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -17,29 +17,29 @@ func NewDCTExecutor(dctPath string) *DCTExecutor {
 }
 
 type ExecutionResult struct {
-	Success    bool   `json:"success"`
-	Output     string `json:"output"`
-	Error      string `json:"error,omitempty"`
-	ExitCode   int    `json:"exit_code"`
-	Duration   string `json:"duration"`
+	Success  bool   `json:"success"`
+	Output   string `json:"output"`
+	Error    string `json:"error,omitempty"`
+	ExitCode int    `json:"exit_code"`
+	Duration string `json:"duration"`
 }
 
 func (e *DCTExecutor) Execute(command string, args []string) (*ExecutionResult, error) {
 	start := time.Now()
-	
+
 	// Build the full command
 	fullArgs := append([]string{command}, args...)
 	cmd := exec.Command(e.dctPath, fullArgs...)
-	
+
 	// Capture both stdout and stderr
 	output, err := cmd.CombinedOutput()
 	duration := time.Since(start)
-	
+
 	result := &ExecutionResult{
 		Output:   string(output),
 		Duration: duration.String(),
 	}
-	
+
 	if err != nil {
 		result.Success = false
 		result.Error = err.Error()
@@ -52,7 +52,7 @@ func (e *DCTExecutor) Execute(command string, args []string) (*ExecutionResult, 
 		result.Success = true
 		result.ExitCode = 0
 	}
-	
+
 	return result, nil
 }
 
@@ -62,18 +62,18 @@ func (e *DCTExecutor) createTempFile(content string, extension string) (string, 
 	if err != nil {
 		return "", err
 	}
-	
+
 	if _, err := tmpFile.WriteString(content); err != nil {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
 		return "", err
 	}
-	
+
 	if err := tmpFile.Close(); err != nil {
 		os.Remove(tmpFile.Name())
 		return "", err
 	}
-	
+
 	return tmpFile.Name(), nil
 }
 
@@ -87,53 +87,53 @@ func (e *DCTExecutor) cleanup(filePath string) {
 // Execute peek command
 func (e *DCTExecutor) ExecutePeek(filePath string, lines int, outputFile string) (*ExecutionResult, error) {
 	args := []string{filePath}
-	
+
 	if lines > 0 {
 		args = append(args, "-n", fmt.Sprintf("%d", lines))
 	}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	return e.Execute("peek", args)
 }
 
-// Execute diff command  
+// Execute diff command
 func (e *DCTExecutor) ExecuteDiff(keys string, file1, file2 string, metrics string, showAll bool, outputFile string) (*ExecutionResult, error) {
 	args := []string{keys, file1, file2}
-	
+
 	if metrics != "" {
 		args = append(args, "-m", metrics)
 	}
-	
+
 	if showAll {
 		args = append(args, "-a")
 	}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	return e.Execute("diff", args)
 }
 
 // Execute chart command
 func (e *DCTExecutor) ExecuteChart(filePath string, colIndex int, width int32) (*ExecutionResult, error) {
 	args := []string{}
-	
+
 	if filePath != "" {
 		args = append(args, filePath)
 	}
-	
+
 	if colIndex >= 0 {
 		args = append(args, fmt.Sprintf("%d", colIndex))
 	}
-	
+
 	if width > 0 {
 		args = append(args, "-w", fmt.Sprintf("%d", width))
 	}
-	
+
 	return e.Execute("chart", args)
 }
 
@@ -143,7 +143,7 @@ func (e *DCTExecutor) ExecuteGenerate(schema string, lines int, format string, o
 	var schemaFile string
 	var err error
 	var cleanup bool
-	
+
 	if strings.HasPrefix(strings.TrimSpace(schema), "{") || strings.HasPrefix(strings.TrimSpace(schema), "[") {
 		// It's JSON content, create temp file
 		schemaFile, err = e.createTempFile(schema, ".json")
@@ -155,27 +155,27 @@ func (e *DCTExecutor) ExecuteGenerate(schema string, lines int, format string, o
 		// It's a file path
 		schemaFile = schema
 	}
-	
+
 	args := []string{schemaFile}
-	
+
 	if lines > 0 {
 		args = append(args, "-n", fmt.Sprintf("%d", lines))
 	}
-	
+
 	if format != "" {
 		args = append(args, "-f", format)
 	}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	result, execErr := e.Execute("gen", args)
-	
+
 	if cleanup {
 		e.cleanup(schemaFile)
 	}
-	
+
 	return result, execErr
 }
 
@@ -184,7 +184,7 @@ func (e *DCTExecutor) ExecuteFlattify(input string, sql bool, outputFile string)
 	var inputFile string
 	var err error
 	var cleanup bool
-	
+
 	if strings.HasPrefix(strings.TrimSpace(input), "{") || strings.HasPrefix(strings.TrimSpace(input), "[") {
 		// It's JSON content, create temp file
 		inputFile, err = e.createTempFile(input, ".json")
@@ -196,48 +196,48 @@ func (e *DCTExecutor) ExecuteFlattify(input string, sql bool, outputFile string)
 		// It's a file path
 		inputFile = input
 	}
-	
+
 	args := []string{inputFile}
-	
+
 	if sql {
 		args = append(args, "-s")
 	}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	result, execErr := e.Execute("flattify", args)
-	
+
 	if cleanup {
 		e.cleanup(inputFile)
 	}
-	
+
 	return result, execErr
 }
 
 // Execute js2sql command
 func (e *DCTExecutor) ExecuteJs2Sql(schemaFile string, tableName string, outputFile string) (*ExecutionResult, error) {
 	args := []string{schemaFile}
-	
+
 	if tableName != "" {
 		args = append(args, "-t", tableName)
 	}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	return e.Execute("js2sql", args)
 }
 
 // Execute profile command
 func (e *DCTExecutor) ExecuteProfile(filePath string, outputFile string) (*ExecutionResult, error) {
 	args := []string{filePath}
-	
+
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
 	}
-	
+
 	return e.Execute("prof", args)
 }

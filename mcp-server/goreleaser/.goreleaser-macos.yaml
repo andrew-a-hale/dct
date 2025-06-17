@@ -14,6 +14,11 @@ builds:
       - arm64
     main: main.go
     binary: dct-mcp-server
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - format: binary
 
 checksum:
   name_template: "checksums-macos-mcp.txt"
