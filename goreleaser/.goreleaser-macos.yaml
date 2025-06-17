@@ -17,6 +17,9 @@ builds:
     ldflags:
       - -s -w -X dct/cmd/version.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
+archives:
+  - format: binary
+
 checksum:
   name_template: "checksums-macos.txt"
 
