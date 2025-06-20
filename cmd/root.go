@@ -6,6 +6,7 @@ import (
 	"dct/cmd/diff"
 	"dct/cmd/flattify"
 	"dct/cmd/generator"
+	"dct/cmd/infer"
 	"dct/cmd/js2sql"
 	"dct/cmd/peek"
 	"dct/cmd/profile"
@@ -26,6 +27,7 @@ func init() {
 	rootCmd.AddCommand(art.ArtCmd)
 	rootCmd.AddCommand(chart.ChartCmd)
 	rootCmd.AddCommand(peek.PeekCmd)
+	rootCmd.AddCommand(infer.InferCmd)
 	rootCmd.AddCommand(diff.DiffCmd)
 	rootCmd.AddCommand(generator.GenCmd)
 	rootCmd.AddCommand(flattify.FlattifyCmd)

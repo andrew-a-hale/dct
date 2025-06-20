@@ -58,7 +58,7 @@ func (e *DCTExecutor) Execute(command string, args []string) (*ExecutionResult, 
 
 // Helper function to create temporary files for commands that need file input
 func (e *DCTExecutor) createTempFile(content string, extension string) (string, error) {
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("dct-mcp-*%s", extension))
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("mcp-*%s", extension))
 	if err != nil {
 		return "", err
 	}
@@ -79,7 +79,7 @@ func (e *DCTExecutor) createTempFile(content string, extension string) (string, 
 
 // Clean up temporary files
 func (e *DCTExecutor) cleanup(filePath string) {
-	if strings.Contains(filePath, "dct-mcp-") {
+	if strings.Contains(filePath, "mcp-") {
 		os.Remove(filePath)
 	}
 }
@@ -94,6 +94,25 @@ func (e *DCTExecutor) ExecutePeek(filePath string, lines int, outputFile string)
 
 	if outputFile != "" {
 		args = append(args, "-o", outputFile)
+	}
+
+	return e.Execute("peek", args)
+}
+
+// Execute peek command
+func (e *DCTExecutor) ExecuteInfer(filePath string, lines int, outputFile string, table string) (*ExecutionResult, error) {
+	args := []string{filePath}
+
+	if lines > 0 {
+		args = append(args, "-n", fmt.Sprintf("%d", lines))
+	}
+
+	if outputFile != "" {
+		args = append(args, "-o", outputFile)
+	}
+
+	if table != "" {
+		args = append(args, "-t", table)
 	}
 
 	return e.Execute("peek", args)

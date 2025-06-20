@@ -44,6 +44,26 @@ dct peek examples/left.parquet -n 5
 ╰──────┴──────┴───────╯
 ```
 
+### Infer
+
+Infer a SQL Schema from a file:
+
+```bash
+dct infer <file> [flags]
+  -t, --table <name>     Table name (default default)
+  -o, --output <file>    Output to file (default stdout)
+  -n, --lines <number>   Number of lines to infer schema from
+
+Examples
+dct infer examples/left.parquet -n 5
+
+create table default (
+    "a" bigint,
+    "b" bigint,
+    "c" varchar
+)
+```
+
 ### Diff
 
 Compare two files with key matching and metrics:

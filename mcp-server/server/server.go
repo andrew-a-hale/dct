@@ -95,6 +95,33 @@ func (s *MCPServer) handleToolsList() (any, error) {
 			},
 		},
 		{
+			"name":        "data_infer",
+			"description": "Generate a SQL Create Table statement from a file",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"file_path": map[string]any{
+						"type":        "string",
+						"description": "Path to the data file (CSV, JSON, NDJSON, Parquet)",
+					},
+					"lines": map[string]any{
+						"type":        "integer",
+						"description": "Number of lines to display (default: 10)",
+						"minimum":     1,
+					},
+					"output_file": map[string]any{
+						"type":        "string",
+						"description": "Optional output file path",
+					},
+					"table": map[string]any{
+						"type":        "string",
+						"description": "Table name used in create table statement (default: default)",
+					},
+				},
+				"required": []string{"file_path"},
+			},
+		},
+		{
 			"name":        "data_diff",
 			"description": "Compare two data files with key matching and metrics",
 			"inputSchema": map[string]any{
@@ -265,6 +292,8 @@ func (s *MCPServer) handleToolCall(req *jsonrpc2.Request) (any, error) {
 	switch params.Name {
 	case "data_peek":
 		result, err = s.handleDataPeek(params.Arguments)
+	case "data_infer":
+		result, err = s.handleDataInfer(params.Arguments)
 	case "data_diff":
 		result, err = s.handleDataDiff(params.Arguments)
 	case "data_chart":
@@ -305,6 +334,19 @@ func (s *MCPServer) handleDataPeek(args map[string]any) (*ExecutionResult, error
 	}
 
 	return s.executor.ExecutePeek(filePath, int(lines), outputFile)
+}
+
+func (s *MCPServer) handleDataInfer(args map[string]any) (*ExecutionResult, error) {
+	filePath, _ := args["file_path"].(string)
+	lines, _ := args["lines"].(float64)
+	outputFile, _ := args["output_file"].(string)
+	table, _ := args["table"].(string)
+
+	if filePath == "" {
+		return nil, fmt.Errorf("file_path is required")
+	}
+
+	return s.executor.ExecuteInfer(filePath, int(lines), outputFile, table)
 }
 
 func (s *MCPServer) handleDataDiff(args map[string]any) (*ExecutionResult, error) {

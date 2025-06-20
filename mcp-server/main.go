@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"dct-mcp-server/server"
 	"fmt"
 	"log"
+	"mcp-server/server"
 	"os"
 )
 

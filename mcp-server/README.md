@@ -8,6 +8,7 @@ Tool) CLI, making it available to AI agents and other MCP clients.
 The MCP server exposes all DCT functionality as MCP tools:
 
 - **data_peek** - Preview file contents
+- **data_infer** - Infer a SQL Schema for a file
 - **data_diff** - Compare files with key matching and metrics  
 - **data_chart** - Generate simple visualizations from data files
 - **data_generate** - Generate synthetic data with customizable schemas
@@ -105,4 +106,3 @@ preserving all functionality while making it accessible to AI agents.
 - `executor.go` - CLI command execution wrapper
 
 The server creates temporary files when needed for JSON input and cleans them up automatically.
-

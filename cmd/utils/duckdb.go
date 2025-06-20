@@ -15,6 +15,11 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 )
 
+const (
+	TAB     = "    "
+	NEWLINE = "\n"
+)
+
 var style = lipgloss.NewStyle().Align(lipgloss.Center)
 
 type Header struct {
@@ -204,4 +209,26 @@ func (result *Result) Render(writer io.Writer, maxRows int) error {
 
 	fmt.Println(t)
 	return nil
+}
+
+func (result *Result) ToSql(table string) string {
+	sql := fmt.Sprintf("create table %s (", table)
+
+	var cols []string
+	for _, header := range result.Headers {
+		cols = append(
+			cols,
+			fmt.Sprintf(
+				"%s%s\"%s\" %s",
+				NEWLINE,
+				TAB,
+				strings.ToLower(header.Name),
+				strings.ToLower(header.Type),
+			),
+		)
+	}
+	sql += strings.Join(cols, ",")
+	sql += NEWLINE + ")"
+
+	return sql
 }

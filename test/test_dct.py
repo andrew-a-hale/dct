@@ -3,14 +3,14 @@ import subprocess
 import pytest
 import os
 
+PEEK_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
+PROFILE_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
+
 
 class BuildError(Exception):
     def __init__(self):
         super().__init__("failed to build dct")
 
-
-PEEK_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
-PROFILE_SUPPORTED_FILE_TYPES = ["csv", "json", "ndjson", "parquet"]
 
 b = subprocess.run(["go", "build"], capture_output=True)
 if b.stderr:
@@ -545,3 +545,23 @@ def test_js2sql_invalid_schema():
 
     assert out.returncode != 0
     assert b"Error reading file" in out.stderr
+
+
+@pytest.mark.parametrize(
+    "file", ["left.json", "left.ndjson", "left.csv", "left.parquet"]
+)
+def test_infer(file: str):
+    out = subprocess.run(
+        [
+            "./dct",
+            "infer",
+            f"./test/resources/{file}",
+            "-n",
+            "10",
+            "-t",
+            "left",
+        ],
+        capture_output=True,
+    )
+
+    assert out.stdout == open("./test/expected/left_schema.sql", mode="rb").read()
