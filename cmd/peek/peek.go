@@ -33,7 +33,6 @@ var PeekCmd = &cobra.Command{
 	Args:  cobra.MatchAll(cobra.MinimumNArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := parseFileArg(args)
-		log.Printf("peeking at %s...\n", file)
 
 		var err error
 		writer := defaultWriter

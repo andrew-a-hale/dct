@@ -12,7 +12,7 @@ b = subprocess.run(["go", "build", "-C", "mcp-server"], capture_output=True)
 if b.stderr:
     raise BuildError()
 
-subprocess.run(["chmod", "+x", "./mcp-server/mcp-server"])
+subprocess.run(["chmod", "+x", "./mcp-server/dct-mcp-server"])
 
 
 def send_message(proc, message):
@@ -34,7 +34,7 @@ def read_response(proc, timeout=5):
 
 def setup_server():
     """Start the MCP server and initialize it"""
-    cmd = ["./mcp-server/mcp-server", "./dct"]
+    cmd = ["./mcp-server/dct-mcp-server", "./dct"]
     proc = subprocess.Popen(
         cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -238,7 +238,7 @@ def test_data_generate():
     """Test data_generate tool"""
     with setup_server() as proc:
         try:
-            test_schema = '{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string"},"age":{"type":"integer"}}}'
+            test_schema = '[{"field":"name","source":"firstNames"},{"field":"age","source":"randomUniformInt","config":{"min":18,"max":65}}]'
             generate_msg = {
                 "jsonrpc": "2.0",
                 "id": 7,

@@ -114,7 +114,28 @@ dct chart -w 65 examples/chart.csv 1
 
 ### Generator
 
-Generate synthetic data:
+Generate synthetic data with customizable schemas:
+
+Schema Format:
+Schema should be a JSON array of field objects, each containing
+{"field": "column_name", "source": "source_type", "config": {...}}.
+
+Available sources:
+
+- randomBool
+- randomAscii (config: {"length": int})
+- randomUniformInt (config: {"min": int, "max": int})
+- randomNormal (config: {"mean": float, "std": float})
+- randomPoisson (config: {"lambda": int})
+- randomDatetime (config: {"tz": "timezone", "min": "YYYY-MM-DD HH:MM:SS", "max": "YYYY-MM-DD HH:MM:SS"})
+- randomDate (config: {"min": "YYYY-MM-DD", "max": "YYYY-MM-DD"})
+- randomTime (config: {"min": "HH:MM:SS", "max": "HH:MM:SS"})
+- uuid
+- firstNames
+- lastNames
+- companies
+- emails
+- derived (config: {"fields": ["field1", "field2"], "expression": "field1 + ' ' + field2"})
 
 ```bash
 dct gen <schema json file or json> [flags]
@@ -124,15 +145,6 @@ Flags:
   -o, --outfile string   Output file path (default stdout)
   -f, --format string    Output format: csv, ndjson (default "csv")
 
-Examples
-dct gen examples/faker-comp.json -n 5
-
-first_name,last_name,company,email,phone_number
-BRYAN,PETERSON,EMCOR GROUP,BRYAN.PETERSON@EMCORGROUP.COM,24262667
-VALERIA,BROOKS,KRAFT HEINZ,VALERIA.BROOKS@KRAFTHEINZ.COM,52950975
-KENDALL,CASTILLO,REINSURANCE GROUP OF AMERICA,KENDALL.CASTILLO@REINSURANCEGROUPOFAMERICA.COM,63120507
-AIDEN,PRICE,FORD MOTOR,AIDEN.PRICE@FORDMOTOR.COM,74167250
-DYLAN,ALLEN,JACOBS ENGINEERING GROUP,DYLAN.ALLEN@JACOBSENGINEERINGGROUP.COM,83166063
 ```
 
 #### DSL For Derived Fields

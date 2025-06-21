@@ -35,7 +35,6 @@ var InferCmd = &cobra.Command{
 	Args:  cobra.MatchAll(cobra.MinimumNArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := parseFileArg(args)
-		log.Printf("peeking at %s...\n", file)
 
 		var err error
 		writer := defaultWriter
@@ -64,7 +63,7 @@ func parseFileArg(args []string) string {
 	file := path.Base(filepath)
 	fileext := strings.ToLower(path.Ext(file))
 
-	if slices.Contains(utils.PEEK_SUPPORTED_FILETYPES, fileext) {
+	if slices.Contains(utils.INFER_SUPPORTED_FILETYPES, fileext) {
 		return filepath
 	}
 

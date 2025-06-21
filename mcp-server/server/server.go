@@ -7,17 +7,62 @@ import (
 	"os"
 
 	"github.com/sourcegraph/jsonrpc2"
+	"gopkg.in/yaml.v3"
 )
 
 type MCPServer struct {
 	executor *DCTExecutor
 	conn     *jsonrpc2.Conn
+	tools    []Tool
 }
 
-func NewMCPServer(dctPath string) *MCPServer {
-	return &MCPServer{
+type Tool struct {
+	Name        string      `yaml:"name"`
+	Description string      `yaml:"description"`
+	InputSchema InputSchema `yaml:"inputSchema"`
+}
+
+type InputSchema struct {
+	Type       string              `yaml:"type"`
+	Properties map[string]Property `yaml:"properties"`
+	Required   []string            `yaml:"required"`
+}
+
+type Property struct {
+	Type        string   `yaml:"type"`
+	Description string   `yaml:"description"`
+	Minimum     *int     `yaml:"minimum,omitempty"`
+	Enum        []string `yaml:"enum,omitempty"`
+}
+
+type ToolsConfig struct {
+	Tools []Tool `yaml:"tools"`
+}
+
+func NewMCPServer(dctPath string, toolsPath string) *MCPServer {
+	server := &MCPServer{
 		executor: NewDCTExecutor(dctPath),
 	}
+	server.loadTools(toolsPath)
+	return server
+}
+
+func (s *MCPServer) loadTools(file string) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		fmt.Printf("Warning: Could not read tools.yaml: %v\n", err)
+		s.tools = []Tool{} // fallback to empty tools
+		return
+	}
+
+	var config ToolsConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		fmt.Printf("Warning: Could not parse tools.yaml: %v\n", err)
+		s.tools = []Tool{} // fallback to empty tools
+		return
+	}
+
+	s.tools = config.Tools
 }
 
 func (s *MCPServer) Start(ctx context.Context) error {
@@ -52,7 +97,10 @@ func (s *MCPServer) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrp
 	case "tools/call":
 		return s.handleToolCall(req)
 	default:
-		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeMethodNotFound, Message: fmt.Sprintf("method not found: %s", req.Method)}
+		return nil, &jsonrpc2.Error{
+			Code:    jsonrpc2.CodeMethodNotFound,
+			Message: fmt.Sprintf("method not found: %s", req.Method),
+		}
 	}
 }
 
@@ -70,205 +118,34 @@ func (s *MCPServer) handleInitialize() (any, error) {
 }
 
 func (s *MCPServer) handleToolsList() (any, error) {
-	tools := []map[string]any{
-		{
-			"name":        "data_peek",
-			"description": "Preview file contents - display the first few lines of a data file",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"file_path": map[string]any{
-						"type":        "string",
-						"description": "Path to the data file (CSV, JSON, NDJSON, Parquet)",
-					},
-					"lines": map[string]any{
-						"type":        "integer",
-						"description": "Number of lines to display (default: 10)",
-						"minimum":     1,
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"file_path"},
-			},
-		},
-		{
-			"name":        "data_infer",
-			"description": "Generate a SQL Create Table statement from a file",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"file_path": map[string]any{
-						"type":        "string",
-						"description": "Path to the data file (CSV, JSON, NDJSON, Parquet)",
-					},
-					"lines": map[string]any{
-						"type":        "integer",
-						"description": "Number of lines to display (default: 10)",
-						"minimum":     1,
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-					"table": map[string]any{
-						"type":        "string",
-						"description": "Table name used in create table statement (default: default)",
-					},
-				},
-				"required": []string{"file_path"},
-			},
-		},
-		{
-			"name":        "data_diff",
-			"description": "Compare two data files with key matching and metrics",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"keys": map[string]any{
-						"type":        "string",
-						"description": "Key specification for matching (format: left_key[=right_key])",
-					},
-					"file1": map[string]any{
-						"type":        "string",
-						"description": "Path to the first data file",
-					},
-					"file2": map[string]any{
-						"type":        "string",
-						"description": "Path to the second data file",
-					},
-					"metrics": map[string]any{
-						"type":        "string",
-						"description": "JSON metrics specification (e.g., '[{\"agg\":\"count_distinct\",\"left\":\"col\",\"right\":\"col\"}]')",
-					},
-					"show_all": map[string]any{
-						"type":        "boolean",
-						"description": "Show all metrics",
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"keys", "file1", "file2"},
-			},
-		},
-		{
-			"name":        "data_chart",
-			"description": "Generate simple charts from data files",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"file_path": map[string]any{
-						"type":        "string",
-						"description": "Path to the data file",
-					},
-					"column_index": map[string]any{
-						"type":        "integer",
-						"description": "Column index to chart",
-						"minimum":     0,
-					},
-					"width": map[string]any{
-						"type":        "integer",
-						"description": "Width of the chart in characters",
-						"minimum":     10,
-					},
-				},
-				"required": []string{"file_path"},
-			},
-		},
-		{
-			"name":        "data_generate",
-			"description": "Generate synthetic data with customizable schemas",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"schema": map[string]any{
-						"type":        "string",
-						"description": "JSON schema for data generation or path to schema file",
-					},
-					"lines": map[string]any{
-						"type":        "integer",
-						"description": "Number of data rows to generate (default: 1)",
-						"minimum":     1,
-					},
-					"format": map[string]any{
-						"type":        "string",
-						"description": "Output format: csv or ndjson (default: csv)",
-						"enum":        []string{"csv", "ndjson"},
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"schema"},
-			},
-		},
-		{
-			"name":        "data_flattify",
-			"description": "Convert nested JSON structures to flat formats or SQL",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"input": map[string]any{
-						"type":        "string",
-						"description": "JSON content or path to JSON file",
-					},
-					"sql": map[string]any{
-						"type":        "boolean",
-						"description": "Create DuckDB-compliant SQL Select statement",
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"input"},
-			},
-		},
-		{
-			"name":        "data_js2sql",
-			"description": "Convert JSON Schema to SQL CREATE TABLE statements",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"schema_file": map[string]any{
-						"type":        "string",
-						"description": "Path to JSON schema file",
-					},
-					"table_name": map[string]any{
-						"type":        "string",
-						"description": "Table name (default: test)",
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"schema_file"},
-			},
-		},
-		{
-			"name":        "data_profile",
-			"description": "Provide detailed summaries and profiling for data files",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"file_path": map[string]any{
-						"type":        "string",
-						"description": "Path to the data file to profile",
-					},
-					"output_file": map[string]any{
-						"type":        "string",
-						"description": "Optional output file path",
-					},
-				},
-				"required": []string{"file_path"},
-			},
-		},
+	tools := make([]map[string]any, 0, len(s.tools))
+
+	for _, tool := range s.tools {
+		schema := map[string]any{
+			"type":       tool.InputSchema.Type,
+			"properties": make(map[string]any),
+			"required":   tool.InputSchema.Required,
+		}
+
+		for propName, prop := range tool.InputSchema.Properties {
+			propMap := map[string]any{
+				"type":        prop.Type,
+				"description": prop.Description,
+			}
+			if prop.Minimum != nil {
+				propMap["minimum"] = *prop.Minimum
+			}
+			if len(prop.Enum) > 0 {
+				propMap["enum"] = prop.Enum
+			}
+			schema["properties"].(map[string]any)[propName] = propMap
+		}
+
+		tools = append(tools, map[string]any{
+			"name":        tool.Name,
+			"description": tool.Description,
+			"inputSchema": schema,
+		})
 	}
 
 	return map[string]any{

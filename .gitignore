@@ -1,8 +1,6 @@
 __pycache__
 .pytest_cache
 dct
-mcp-server
+dct-mcp-server
 
 dist/
-
-report.txt
