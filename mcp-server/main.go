@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 )
-
-const TOOLS_PATH = "./mcp-server/tools.yaml"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -19,11 +18,21 @@ func main() {
 
 	dctPath := os.Args[1]
 
-	if _, err := os.Stat(dctPath); os.IsNotExist(err) {
-		log.Fatalf("DCT binary not found at: %s", dctPath)
+	var err error
+	var msg string
+	if _, err = os.Stat(dctPath); os.IsNotExist(err) {
+		msg = fmt.Sprintf("DCT binary not found at: %s", dctPath)
 	}
 
-	server := server.NewMCPServer(dctPath, TOOLS_PATH)
+	if _, err = exec.LookPath(dctPath); err != nil {
+		msg = "DCT command not found. Is the command installed?"
+	}
+
+	if err != nil {
+		log.Fatal(msg)
+	}
+
+	server := server.NewMCPServer(dctPath)
 
 	log.Printf("Starting DCT MCP Server with DCT binary at: %s", dctPath)
 

@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/sourcegraph/jsonrpc2"
-	"gopkg.in/yaml.v3"
 )
 
 type MCPServer struct {
@@ -35,34 +34,16 @@ type Property struct {
 	Enum        []string `yaml:"enum,omitempty"`
 }
 
-type ToolsConfig struct {
-	Tools []Tool `yaml:"tools"`
-}
-
-func NewMCPServer(dctPath string, toolsPath string) *MCPServer {
+func NewMCPServer(dctPath string) *MCPServer {
 	server := &MCPServer{
 		executor: NewDCTExecutor(dctPath),
 	}
-	server.loadTools(toolsPath)
+	server.loadTools()
 	return server
 }
 
-func (s *MCPServer) loadTools(file string) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Printf("Warning: Could not read tools.yaml: %v\n", err)
-		s.tools = []Tool{} // fallback to empty tools
-		return
-	}
-
-	var config ToolsConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		fmt.Printf("Warning: Could not parse tools.yaml: %v\n", err)
-		s.tools = []Tool{} // fallback to empty tools
-		return
-	}
-
-	s.tools = config.Tools
+func (s *MCPServer) loadTools() {
+	s.tools = getTools()
 }
 
 func (s *MCPServer) Start(ctx context.Context) error {
