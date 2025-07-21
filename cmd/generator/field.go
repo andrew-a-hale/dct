@@ -4,7 +4,6 @@ import (
 	"context"
 	"dct/cmd/generator/sources"
 	"encoding/json"
-	"io"
 	"log"
 	"math"
 	"math/rand/v2"
@@ -31,23 +30,20 @@ func ParseField[T Field](raw []byte) *T {
 
 func parseSchema(rawSchema string) Schema {
 	var schema []byte
-	if _, err := os.Stat(rawSchema); err != nil && json.Valid([]byte(rawSchema)) {
+	var err error
+
+	if json.Valid([]byte(rawSchema)) {
 		schema = []byte(rawSchema)
 	} else {
-		f, err := os.Open(rawSchema)
-		if err != nil {
-			log.Fatalf("failed to open schema file: %v\n", err)
-		}
-		defer f.Close()
+		schema, err = os.ReadFile(rawSchema)
+	}
 
-		schema, err = io.ReadAll(f)
-		if err != nil {
-			log.Fatalf("failed to read schema file: %v\n", err)
-		}
+	if err != nil {
+		log.Fatalf("failed to parse schema file '%v': %v\n", rawSchema, schema)
 	}
 
 	var fields []any
-	err := json.Unmarshal(schema, &fields)
+	err = json.Unmarshal(schema, &fields)
 	if err != nil {
 		log.Fatalf("failed to parse schema: %v\n", err)
 	}

@@ -283,6 +283,54 @@ def test_generator():
     assert out.stderr == b""
 
 
+def test_generator_inline():
+    out = subprocess.run(
+        [
+            "./dct",
+            "gen",
+            """[
+    {"field": "event_id", "source": "uuid"},
+    {
+        "field": "timestamp",
+        "source": "randomDatetime",
+        "config": {
+            "min": "2024-01-01 00:00:00",
+            "max": "2025-12-31 23:59:59",
+            "tz": "UTC"
+        }
+    },
+    {
+        "field": "event_type",
+        "source": "randomEnum",
+        "config": {"values": ["login", "click", "pageview", "error", "purchase"]}
+    },
+    {"field": "user_id", "source": "uuid"},
+    {
+        "field": "device_type",
+        "source": "randomEnum",
+        "config": {"values": ["mobile", "desktop", "tablet"]}
+    },
+    {
+        "field": "platform",
+        "source": "randomEnum",
+        "config": {"values": ["web", "ios", "android", "windows", "macos"]}
+    },
+    {"field": "session_id", "source": "uuid"},
+    {"field": "info", "source": "randomAscii", "config": {"length": 50}}
+]""",
+        ],
+        capture_output=True,
+    )
+
+    # can't test the random data? need to implement rng seed
+    header = out.stdout.decode().splitlines()[0]
+    expected_header = (
+        open("test/expected/test_generator_inline.csv", mode="r").read().strip()
+    )
+    assert header == expected_header
+    assert out.stderr == b""
+
+
 def test_flattify_ndjson():
     out = subprocess.run(
         [

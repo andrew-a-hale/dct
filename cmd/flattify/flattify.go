@@ -77,21 +77,25 @@ func parseJsonArgs(args []string) ([][]byte, string, error) {
 		log.Fatalf("Error: expected 1 arg: %v\n", args)
 	}
 
+	var rawJson []byte
+	var err error
+
 	filepath := args[0]
 	file := path.Base(filepath)
 	fileext := strings.ToLower(path.Ext(file))
-	rawJson, err := os.ReadFile(filepath)
-	if err != nil && !json.Valid([]byte(args[0])) {
-		// not a file or json
-		err := &utils.UnsupportedFileTypeErr{
+	if json.Valid([]byte(args[0])) {
+		rawJson = []byte(args[0])
+	} else {
+		rawJson, err = os.ReadFile(filepath)
+	}
+
+	// not a file or json
+	if err != nil {
+		return nil, "", utils.UnsupportedFileTypeErr{
 			Msg:      "failed to read input json invalid file type",
 			Filename: filepath,
 			Ext:      fileext,
 		}
-		return [][]byte{}, "", err
-	} else if err != nil {
-		// valid json
-		rawJson = []byte(args[0])
 	}
 
 	jsonType, err := detectJsonType(rawJson)

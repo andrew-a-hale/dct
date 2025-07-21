@@ -123,6 +123,7 @@ Schema should be a JSON array of field objects, each containing
 Available sources:
 
 - randomBool
+- randomEnum (config: {"values": array})
 - randomAscii (config: {"length": int})
 - randomUniformInt (config: {"min": int, "max": int})
 - randomNormal (config: {"mean": float, "std": float})
@@ -145,6 +146,13 @@ Flags:
   -o, --outfile string   Output file path (default stdout)
   -f, --format string    Output format: csv, ndjson (default "csv")
 
+Example
+
+dct gen examples/generator-schema.json
+dct gen --format ndjson "[{\"field\": \"alive\", \"source\": \"randomBool\"}]"
+
+{"alive": true}
+{"alive": false}
 ```
 
 #### DSL For Derived Fields
