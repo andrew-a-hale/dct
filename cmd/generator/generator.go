@@ -22,7 +22,7 @@ var (
 
 func init() {
 	GenCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "Output file path (default: stdout)")
-	GenCmd.Flags().StringVarP(&format, "format", "f", "csv", "Output format")
+	GenCmd.Flags().StringVarP(&format, "format", "f", "csv", "Output format supports ndjson, csv")
 	GenCmd.Flags().IntVarP(&lines, "lines", "n", 1, "Number of data rows to generate")
 }
 

@@ -123,6 +123,7 @@ The schema should be a JSON array of field objects, each containing:
 {"field": "column_name", "source": "source_type", "config": {...}}.
 Available sources:
   randomBool,
+	randomEnum (config: {"values": array}),
   randomAscii (config: {"length": int}),
   randomUniformInt (config: {"min": int, "max": int}),
   randomNormal (config: {"mean": float, "std": float}),
