@@ -107,5 +107,16 @@
       "min": "02:00:00",
       "max": "10:00:00"
     }
+  },
+  {
+    "field": "title",
+    "source": "randomEnum",
+    "config": {
+      "values": [
+        "MR",
+        "DR",
+        "SIR"
+      ]
+    }
   }
 ]

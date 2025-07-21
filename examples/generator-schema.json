@@ -113,5 +113,16 @@
   {
     "field": "awake",
     "source": "randomBool"
+  },
+  {
+    "field": "title",
+    "source": "randomEnum",
+    "config": {
+      "values": [
+        "MR",
+        "DR",
+        "SIR"
+      ]
+    }
   }
 ]
