@@ -31,7 +31,7 @@ func ParseField[T Field](raw []byte) *T {
 
 func parseSchema(rawSchema string) Schema {
 	var schema []byte
-	if json.Valid([]byte(rawSchema)) {
+	if _, err := os.Stat(rawSchema); err != nil && json.Valid([]byte(rawSchema)) {
 		schema = []byte(rawSchema)
 	} else {
 		f, err := os.Open(rawSchema)
