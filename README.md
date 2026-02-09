@@ -120,6 +120,7 @@ Schema Format:
 Schema should be a JSON array of field objects, each containing
 {"field": "column_name", "source": "source_type", "config": {...}}.
 
+```text
 Available sources:
 
 - randomBool
@@ -137,6 +138,8 @@ Available sources:
 - companies
 - emails
 - derived (config: {"fields": ["field1", "field2"], "expression": "field1 + ' ' + field2"})
+```
+```
 
 ```bash
 dct gen <schema json file or json> [flags]
