@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -55,8 +56,8 @@ var ArtCmd = &cobra.Command{
 					scene.Graphic.Direction.Y,
 				)
 			}
-			scene.Draw()
-			scene.Update(scene.Graphic)
+			_ = scene.Draw()
+			_ = scene.Update(scene.Graphic)
 			time.Sleep(fpsToDuration())
 			frame++
 		}
@@ -81,16 +82,16 @@ func (s *Scene) Update(g *Graphic) error {
 
 func (s *Scene) Draw() error {
 	var char []byte
-	var out string
+	var out strings.Builder
 
 	for i := range s.Height {
 		for j := range s.Width {
 			char, _ = s.Graphic.getPixel(i, j)
-			out += string(char)
+			out.WriteString(string(char))
 		}
 	}
 
-	fmt.Print(out)
+	fmt.Print(out.String())
 
 	return nil
 }

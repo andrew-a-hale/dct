@@ -10,9 +10,9 @@ import (
 )
 
 type DerivedField struct {
-	Field    string `json:"field"`
-	Source   string `json:"source"`
-	Config   struct {
+	Field  string `json:"field"`
+	Source string `json:"source"`
+	Config struct {
 		Expression string   `json:"expression"`
 		Fields     []string `json:"fields"`
 	} `json:"config"`
@@ -36,35 +36,18 @@ func (s DerivedField) Generate(ctx context.Context) any {
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
 		cacheValue := cache.GetValue(field.GetName())
-		var value any
-		var ok bool
-		switch cacheValue.(type) {
-		case bool:
-			value, ok = cacheValue.(bool)
-		case int, int32, int64:
-			value, ok = cacheValue.(int)
-		case float32:
-			value, ok = cacheValue.(float32)
-		case float64:
-			value, ok = cacheValue.(float64)
-		case string:
-			value, ok = cacheValue.(string)
+		switch v := cacheValue.(type) {
+		case bool, int, int32, int64, float32, float64, string:
+			env[k] = v
 		default:
-			log.Fatal("unimplemented type used in derived field")
+			log.Fatalf("unimplemented type used in derived field: %T", v)
 		}
-
-		if !ok {
-			log.Fatalf("failed to parse value `%v`", cacheValue)
-		}
-
-		env[k] = value
 	}
 
 	program, err := expr.Compile(
 		s.Config.Expression,
 		expr.Env(env),
 	)
-
 	if err != nil {
 		log.Fatalf(
 			"failed to execute expression `%s` for field %s: %v",

@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"dct/cmd/generator/sources"
 	"encoding/json"
 	"log"
 	"math"
@@ -11,6 +10,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"dct/cmd/generator/sources"
 
 	"github.com/google/uuid"
 )
@@ -61,7 +62,7 @@ func parseSchema(rawSchema string) Schema {
 		case "randomBool":
 			parsedFields = append(parsedFields, ParseField[RandomBoolField](j))
 		case "randomAscii":
-			parsedFields = append(parsedFields, ParseField[RandomAsciiField](j))
+			parsedFields = append(parsedFields, ParseField[RandomASCIIField](j))
 		case "randomUniformInt":
 			parsedFields = append(parsedFields, ParseField[RandomUniformIntField](j))
 		case "randomNormal":
@@ -81,7 +82,7 @@ func parseSchema(rawSchema string) Schema {
 		case "randomDate":
 			parsedFields = append(parsedFields, ParseField[RandomDateField](j))
 		case "uuid":
-			parsedFields = append(parsedFields, ParseField[UuidField](j))
+			parsedFields = append(parsedFields, ParseField[UUIDField](j))
 		case "emails":
 			parsedFields = append(parsedFields, ParseField[EmailField](j))
 		case "companies":
@@ -104,7 +105,7 @@ type RandomBoolField struct {
 	Source string `json:"source"`
 }
 
-// randomly generated ascii string with chars from 33-126
+// Generate randomly generated ascii string with chars from 33-126
 func (s RandomBoolField) Generate(ctx context.Context) any {
 	var value bool
 	if rand.Float32() > 0.5 {
@@ -140,7 +141,7 @@ func (s RandomEnumField) GetName() string {
 	return s.Field
 }
 
-type RandomAsciiField struct {
+type RandomASCIIField struct {
 	Field  string `json:"field"`
 	Source string `json:"source"`
 	Config struct {
@@ -148,8 +149,8 @@ type RandomAsciiField struct {
 	} `json:"config"`
 }
 
-// randomly generated ascii string with chars from 33-126
-func (s RandomAsciiField) Generate(ctx context.Context) any {
+// Generate randomly generated ascii string with chars from 33-126
+func (s RandomASCIIField) Generate(ctx context.Context) any {
 	var value string
 	for range s.Config.Length {
 		value += string(uint8(rand.IntN(93) + 33))
@@ -160,7 +161,7 @@ func (s RandomAsciiField) Generate(ctx context.Context) any {
 	return value
 }
 
-func (s RandomAsciiField) GetName() string {
+func (s RandomASCIIField) GetName() string {
 	return s.Field
 }
 
@@ -274,8 +275,8 @@ type RandomDatetimeField struct {
 }
 
 func (s RandomDatetimeField) Generate(ctx context.Context) any {
-	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
-	MIN_TIME := time.Unix(0, 0)
+	maxTime := time.Unix(1<<63-62135596801, 999999999)
+	minTime := time.Unix(0, 0)
 
 	loc, err := time.LoadLocation(s.Config.Tz)
 	if err != nil {
@@ -290,11 +291,11 @@ func (s RandomDatetimeField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max datetime: %v\n", err)
 		}
 	} else {
-		parsedDtMin = MIN_TIME
+		parsedDtMin = minTime
 	}
 
-	lb := MIN_TIME.Unix()
-	if parsedDtMin.After(MIN_TIME) {
+	lb := minTime.Unix()
+	if parsedDtMin.After(minTime) {
 		lb = parsedDtMin.Unix()
 	}
 
@@ -306,11 +307,11 @@ func (s RandomDatetimeField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max datetime: %v\n", err)
 		}
 	} else {
-		parsedDtMax = MAX_TIME
+		parsedDtMax = maxTime
 	}
 
-	ub := MAX_TIME.Unix()
-	if parsedDtMax.Before(MAX_TIME) {
+	ub := maxTime.Unix()
+	if parsedDtMax.Before(maxTime) {
 		ub = parsedDtMax.Unix()
 	}
 
@@ -333,8 +334,8 @@ type RandomDateField struct {
 }
 
 func (s RandomDateField) Generate(ctx context.Context) any {
-	MAX_TIME := time.Unix(1<<63-62135596801, 999999999)
-	MIN_TIME := time.Unix(0, 0)
+	maxTime := time.Unix(1<<63-62135596801, 999999999)
+	minTime := time.Unix(0, 0)
 
 	// handle min date
 	var err error
@@ -345,11 +346,11 @@ func (s RandomDateField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max date: %v\n", err)
 		}
 	} else {
-		parsedDtMin = MIN_TIME
+		parsedDtMin = minTime
 	}
 
-	lb := MIN_TIME.Unix()
-	if parsedDtMin.After(MIN_TIME) {
+	lb := minTime.Unix()
+	if parsedDtMin.After(minTime) {
 		lb = parsedDtMin.Unix()
 	}
 
@@ -361,11 +362,11 @@ func (s RandomDateField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max date: %v\n", err)
 		}
 	} else {
-		parsedDtMax = MAX_TIME
+		parsedDtMax = maxTime
 	}
 
-	ub := MAX_TIME.Unix()
-	if parsedDtMax.Before(MAX_TIME) {
+	ub := maxTime.Unix()
+	if parsedDtMax.Before(maxTime) {
 		ub = parsedDtMax.Unix()
 	}
 
@@ -388,8 +389,8 @@ type RandomTimeField struct {
 }
 
 func (s RandomTimeField) Generate(ctx context.Context) any {
-	MAX_TIME, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
-	MIN_TIME, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
+	maxTime, _ := time.ParseInLocation(time.TimeOnly, "23:59:59", time.UTC)
+	minTime, _ := time.ParseInLocation(time.TimeOnly, "00:00:00", time.UTC)
 
 	// handle min time
 	var err error
@@ -403,11 +404,11 @@ func (s RandomTimeField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max time: %v\n", err)
 		}
 	} else {
-		parsedDtMin = MIN_TIME
+		parsedDtMin = minTime
 	}
 
-	lb := MIN_TIME.Unix()
-	if parsedDtMin.After(MIN_TIME) {
+	lb := minTime.Unix()
+	if parsedDtMin.After(minTime) {
 		lb = parsedDtMin.Unix()
 	}
 
@@ -422,11 +423,11 @@ func (s RandomTimeField) Generate(ctx context.Context) any {
 			log.Fatalf("failed to parse max time: %v\n", err)
 		}
 	} else {
-		parsedDtMax = MAX_TIME
+		parsedDtMax = maxTime
 	}
 
-	ub := MAX_TIME.Unix()
-	if parsedDtMax.Before(MAX_TIME) {
+	ub := maxTime.Unix()
+	if parsedDtMax.Before(maxTime) {
 		ub = parsedDtMax.Unix()
 	}
 
@@ -439,18 +440,18 @@ func (s RandomTimeField) GetName() string {
 	return s.Field
 }
 
-type UuidField struct {
+type UUIDField struct {
 	Field  string `json:"field"`
 	Source string `json:"source"`
 }
 
-func (s UuidField) Generate(ctx context.Context) any {
+func (s UUIDField) Generate(ctx context.Context) any {
 	value := uuid.NewString()
 	cache.PutValue(s.Field, value)
 	return value
 }
 
-func (s UuidField) GetName() string {
+func (s UUIDField) GetName() string {
 	return s.Field
 }
 

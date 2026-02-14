@@ -1,7 +1,6 @@
 package chart
 
 import (
-	"dct/cmd/utils"
 	"fmt"
 	"log"
 	"math"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"dct/cmd/utils"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -21,16 +22,15 @@ func init() {
 
 const (
 	DECIMAL_PLACES int = 2
-	MIN_WIDTH      int = 20
+	MINWIDTH       int = 20
 )
 
 var (
-	TEXTURE                []byte = []byte("╍")
-	DIV_CHAR               []byte = []byte("┤")
-	MIDDLE_HORIZONTAL_CHAR []byte = []byte("─")
-	MIDDLE_VERTICAL_CHAR   []byte = []byte("│")
-	width                  int
-	agg                    string
+	texture              []byte = []byte("╍")
+	divChar              []byte = []byte("┤")
+	middleHorizontalChar []byte = []byte("─")
+	middleVerticalChar   []byte = []byte("│")
+	width                int
 )
 
 type Chart struct {
@@ -41,7 +41,7 @@ type Chart struct {
 	Rows         []string
 }
 
-var CHART_TEMPLATE string = `
+var ChartTemplate string = `
 {{.XLabelWs}} ┌─{{.Title}}{{.TopBorder}}┐
 {{range .Rows}} {{- println .}}{{end -}}
 {{.XLabelWs}} └{{.BottomBorder}}┘
@@ -66,7 +66,7 @@ func draw(filename string, xs []string, ys []int) {
 	}
 
 	xMaxLength := maxStringWidth(xs)
-	minWidth := xMaxLength + MIN_WIDTH
+	minWidth := xMaxLength + MINWIDTH
 	if termWidth < minWidth && width > 0 {
 		log.Fatal("terminal width is too small to render chart\n")
 	}
@@ -79,7 +79,7 @@ func draw(filename string, xs []string, ys []int) {
 	for _, x := range xs {
 		xLength := strings.Count(x, "") - 1
 		leading := strings.Repeat(" ", xMaxLength-xLength)
-		xlabels = append(xlabels, fmt.Sprintf("%s%s %s ", leading, x, DIV_CHAR))
+		xlabels = append(xlabels, fmt.Sprintf("%s%s %s ", leading, x, divChar))
 	}
 
 	yMaxLength := int(math.Log10(float64(slices.Max(ys))))
@@ -92,7 +92,7 @@ func draw(filename string, xs []string, ys []int) {
 	for i, y := range ys {
 		// label
 		line := fmt.Sprint(xlabels[i])
-		line += makeBar(y, pixelValue, TEXTURE)
+		line += makeBar(y, pixelValue, texture)
 		line += fmt.Sprintf(" %d ", y)
 
 		// fill
@@ -100,19 +100,19 @@ func draw(filename string, xs []string, ys []int) {
 		line += strings.Repeat(" ", termWidth-lineLength-1)
 
 		// border
-		line += string(MIDDLE_VERTICAL_CHAR)
+		line += string(middleVerticalChar)
 		rows = append(rows, line)
 	}
 
 	chart := Chart{
 		Title:        title,
 		XLabelWs:     strings.Repeat(" ", xMaxLength),
-		TopBorder:    strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), termWidth-xMaxLength-1-1-strings.Count(title, "")-1),
-		BottomBorder: strings.Repeat(string(MIDDLE_HORIZONTAL_CHAR), termWidth-xMaxLength-1-1-1),
+		TopBorder:    strings.Repeat(string(middleHorizontalChar), termWidth-xMaxLength-1-1-strings.Count(title, "")-1),
+		BottomBorder: strings.Repeat(string(middleHorizontalChar), termWidth-xMaxLength-1-1-1),
 		Rows:         rows,
 	}
 
-	tmpl, err := template.New("chart").Parse(CHART_TEMPLATE)
+	tmpl, err := template.New("chart").Parse(ChartTemplate)
 	if err != nil {
 		log.Fatalf("invalid chart template: %v\n", err)
 	}
@@ -185,7 +185,7 @@ func makeTitle(filename string, width int) string {
 	}
 
 	// skip title
-	return string(MIDDLE_HORIZONTAL_CHAR)
+	return string(middleHorizontalChar)
 }
 
 func maxStringWidth(xs []string) int {

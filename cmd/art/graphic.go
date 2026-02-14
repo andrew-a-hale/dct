@@ -2,8 +2,9 @@ package art
 
 import (
 	"bytes"
-	"dct/cmd/utils"
 	"log"
+
+	"dct/cmd/utils"
 )
 
 var (

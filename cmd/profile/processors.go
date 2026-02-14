@@ -1,11 +1,12 @@
 package profile
 
 import (
-	"dct/cmd/utils"
 	"fmt"
 	"math"
 	"sort"
 	"unicode"
+
+	"dct/cmd/utils"
 )
 
 type Vec2[K, V comparable] struct {
@@ -70,7 +71,7 @@ type Analysis struct {
 	Quotes             int
 	Space              int
 	NonSpaceWhitespace int
-	NonAscii           int
+	NonASCII           int
 	Rest               int
 }
 
@@ -81,7 +82,7 @@ Pipe: %d
 Quotes: %d
 Nonspace-Whitespace: %d
 NonAscii: %d
-Rest: %d`, a.Control, a.Comma, a.Pipe, a.Quotes, a.NonSpaceWhitespace, a.NonAscii, a.Rest)
+Rest: %d`, a.Control, a.Comma, a.Pipe, a.Quotes, a.NonSpaceWhitespace, a.NonASCII, a.Rest)
 }
 
 func AnalyseRunes(m map[rune]int) Analysis {
@@ -101,7 +102,7 @@ func AnalyseRunes(m map[rune]int) Analysis {
 		case k == '|':
 			analysis.Pipe += v
 		case k > unicode.MaxASCII:
-			analysis.NonAscii += v
+			analysis.NonASCII += v
 		default:
 			analysis.Rest += v
 		}

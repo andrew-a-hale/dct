@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"dct/cmd/art"
 	"dct/cmd/chart"
 	"dct/cmd/diff"
@@ -11,7 +13,6 @@ import (
 	"dct/cmd/peek"
 	"dct/cmd/profile"
 	"dct/cmd/version"
-	"log"
 
 	"github.com/spf13/cobra"
 )

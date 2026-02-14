@@ -1,13 +1,14 @@
 package diff
 
 import (
-	"dct/cmd/utils"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"dct/cmd/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -57,7 +58,7 @@ var DiffCmd = &cobra.Command{
 		keys, left, right := parseArgs(args)
 
 		var err error
-		writer := defaultWriter
+		writer = defaultWriter
 		if output != "" {
 			writer, err = os.Create(output)
 			if err != nil {
@@ -107,7 +108,7 @@ func parseMetrics(metricString string) []Metric {
 	if err == nil {
 		metrics, _ = io.ReadAll(file)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var spec []Metric
 	err = json.Unmarshal(metrics, &spec)
@@ -118,7 +119,7 @@ func parseMetrics(metricString string) []Metric {
 	return spec
 }
 
-func generateKeySql(spec keySpec) (left, right string) {
+func generateKeySQL(spec keySpec) (left, right string) {
 	for i, key := range spec.keys {
 		left += key.left
 		right += fmt.Sprintf("%s as %s", key.right, key.left)
@@ -131,7 +132,7 @@ func generateKeySql(spec keySpec) (left, right string) {
 	return left, right
 }
 
-func generateMetricSql(spec []Metric) (left, right, main, check string) {
+func generateMetricSQL(spec []Metric) (left, right, main, check string) {
 	if len(spec) == 0 {
 		return
 	}
@@ -181,11 +182,11 @@ func generateMetricSql(spec []Metric) (left, right, main, check string) {
 	return left, right, main, check
 }
 
-func generateSql(keys keySpec, left, right string, metrics []Metric) string {
-	leftKeys, rightKeys := generateKeySql(keys)
-	leftMetrics, rightMetrics, mainMetrics, checkMetrics := generateMetricSql(metrics)
-	leftSql := fmt.Sprintf("select %s, count(*) as l_cnt, %s from '%s' group by all", leftKeys, leftMetrics, left)
-	rightSql := fmt.Sprintf("select %s, count(*) as r_cnt, %s from '%s' group by all", rightKeys, rightMetrics, right)
+func generateSQL(keys keySpec, left, right string, metrics []Metric) string {
+	leftKeys, rightKeys := generateKeySQL(keys)
+	leftMetrics, rightMetrics, mainMetrics, checkMetrics := generateMetricSQL(metrics)
+	leftSQL := fmt.Sprintf("select %s, count(*) as l_cnt, %s from '%s' group by all", leftKeys, leftMetrics, left)
+	rightSQL := fmt.Sprintf("select %s, count(*) as r_cnt, %s from '%s' group by all", rightKeys, rightMetrics, right)
 
 	sql := fmt.Sprintf(
 		`with file1 as (
@@ -198,8 +199,8 @@ from file1
 full join file2 using (%s)
 where l_cnt <> r_cnt %s
 order by %s`,
-		leftSql,
-		rightSql,
+		leftSQL,
+		rightSQL,
 		leftKeys,
 		mainMetrics,
 		leftKeys,
@@ -225,7 +226,7 @@ func diff(keys keySpec, left string, right string, metrics []Metric, writer io.W
 		log.Fatal("attempted to diff when least one of the files have no data")
 	}
 
-	query := generateSql(keys, left, right, metrics)
+	query := generateSQL(keys, left, right, metrics)
 	result, err := utils.Query(query)
 	if err != nil {
 		log.Fatalf("failed to cmp files: %v", err)
@@ -233,8 +234,8 @@ func diff(keys keySpec, left string, right string, metrics []Metric, writer io.W
 
 	if output == "" {
 		maxRows := 5
-		result.Render(writer, maxRows)
+		_ = result.Render(writer, maxRows)
 	} else {
-		result.ToCsv(writer)
+		_ = result.ToCsv(writer)
 	}
 }

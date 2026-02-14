@@ -1,7 +1,6 @@
 package peek
 
 import (
-	"dct/cmd/utils"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +8,8 @@ import (
 	"path"
 	"slices"
 	"strings"
+
+	"dct/cmd/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ var PeekCmd = &cobra.Command{
 		file := parseFileArg(args)
 
 		var err error
-		writer := defaultWriter
+		writer = defaultWriter
 		if output != "" {
 			writer, err = os.Create(output)
 			if err != nil {
@@ -65,6 +66,7 @@ func parseFileArg(args []string) string {
 		return filepath
 	}
 
+	log.Fatalf("Error: unsupported file type: %s\n", fileext)
 	return ""
 }
 
@@ -72,12 +74,12 @@ func peek(file string, lines int, writer io.Writer) {
 	query := fmt.Sprintf("select * from '%s' limit %d", file, lines)
 	result, err := utils.Query(query)
 	if err != nil {
-		log.Fatalf("failed to cmp files: %v", err)
+		log.Fatalf("failed to peek file: %v", err)
 	}
 
 	if output == "" {
-		result.Render(writer, int(lines))
+		_ = result.Render(writer, int(lines))
 	} else {
-		result.ToCsv(writer)
+		_ = result.ToCsv(writer)
 	}
 }

@@ -2,12 +2,13 @@ package generator
 
 import (
 	"context"
-	"dct/cmd/utils"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"strings"
+
+	"dct/cmd/utils"
 )
 
 func Write(ctx context.Context, out io.Writer, lines int) {
@@ -23,7 +24,7 @@ func Write(ctx context.Context, out io.Writer, lines int) {
 
 	switch format {
 	case utils.NDJSON:
-		writeJson(ctx, out, schema, lines)
+		writeJSON(ctx, out, schema, lines)
 	case utils.CSV:
 		writeCsv(ctx, out, schema, lines)
 	}
@@ -44,11 +45,11 @@ func writeCsv(ctx context.Context, out io.Writer, schema Schema, lines int) {
 					name = fmt.Sprintf(`"%s"`, name)
 				}
 
-				fmt.Fprintf(out, "%s", name)
+				_, _ = fmt.Fprintf(out, "%s", name)
 				if i < fields-1 {
-					fmt.Fprintf(out, ",")
+					_, _ = fmt.Fprintf(out, ",")
 				} else {
-					fmt.Fprintf(out, "\n")
+					_, _ = fmt.Fprintf(out, "\n")
 				}
 			}
 		}
@@ -64,38 +65,38 @@ func writeCsv(ctx context.Context, out io.Writer, schema Schema, lines int) {
 				}
 			}
 
-			fmt.Fprintf(out, "%v", value)
+			_, _ = fmt.Fprintf(out, "%v", value)
 			if i < fields-1 {
-				fmt.Fprintf(out, ",")
+				_, _ = fmt.Fprintf(out, ",")
 			} else {
-				fmt.Fprintf(out, "\n")
+				_, _ = fmt.Fprintf(out, "\n")
 			}
 		}
 	}
 }
 
-func writeJson(ctx context.Context, out io.Writer, schema Schema, lines int) {
+func writeJSON(ctx context.Context, out io.Writer, schema Schema, lines int) {
 	for range lines {
-		fmt.Fprint(out, "{")
+		_, _ = fmt.Fprint(out, "{")
 		for i, f := range schema {
 			value := f.Generate(ctx)
 
 			switch value.(type) {
 			case float32, float64, int, int32, int64, bool:
-				fmt.Fprintf(out, `"%s":%v`, f.GetName(), value)
+				_, _ = fmt.Fprintf(out, `"%s":%v`, f.GetName(), value)
 			case string:
 				v, err := json.Marshal(value)
 				if err != nil {
 					log.Fatalf("failed to write `%s: %v` as json: %v", f.GetName(), value, err)
 				}
-				fmt.Fprintf(out, `"%s":%s`, f.GetName(), v)
+				_, _ = fmt.Fprintf(out, `"%s":%s`, f.GetName(), v)
 			}
 
 			if i != len(schema)-1 {
-				fmt.Fprint(out, ",")
+				_, _ = fmt.Fprint(out, ",")
 			}
 		}
 
-		fmt.Fprintln(out, "}")
+		_, _ = fmt.Fprintln(out, "}")
 	}
 }

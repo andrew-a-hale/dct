@@ -88,7 +88,7 @@ var Js2SqlCmd = &cobra.Command{
 			log.Fatalf("Error processing schema: %v\n", err)
 		}
 
-		fmt.Fprintln(writer, sql)
+		_, _ = fmt.Fprintln(writer, sql)
 	},
 }
 
@@ -172,8 +172,7 @@ func resolveRef(ref string, rootSchema JSONSchema, resolvedSchemas map[string]JS
 		return nil, fmt.Errorf("only local references are supported: %s", ref)
 	}
 
-	if strings.HasPrefix(ref, "#/$defs/") {
-		defName := strings.TrimPrefix(ref, "#/$defs/")
+	if defName, ok := strings.CutPrefix(ref, "#/$defs/"); ok {
 		if rootSchema.Defs != nil {
 			if def, ok := rootSchema.Defs[defName]; ok {
 				return &def, nil
@@ -182,8 +181,7 @@ func resolveRef(ref string, rootSchema JSONSchema, resolvedSchemas map[string]JS
 		return nil, fmt.Errorf("reference not found: %s", ref)
 	}
 
-	if strings.HasPrefix(ref, "#/definitions/") {
-		defName := strings.TrimPrefix(ref, "#/definitions/")
+	if defName, ok := strings.CutPrefix(ref, "#/definitions/"); ok {
 		if rootSchema.Definitions != nil {
 			if def, ok := rootSchema.Definitions[defName]; ok {
 				return &def, nil

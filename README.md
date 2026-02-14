@@ -9,12 +9,15 @@ DCT provides a collection of command-line utilities for working with CSV, JSON,
 NDJSON, and Parquet files:
 
 - **Peek**: Preview file contents
+- **Infer**: Infer SQL schema from data files
 - **Diff**: Compare files with key matching and aggregates
 - **Chart**: Generate simple visualisations from data files
 - **Generator**: Generate synthetic data with customisable schemas
 - **Flattify**: Convert nested JSON structures to flat formats or SQL
 - **JS2SQL**: Convert JSON Schema to SQL CREATE TABLE statements
 - **Prof**: Profile data files for values and characters
+- **Art**: Display ASCII art visualisations
+- **Version**: Display tool version
 
 ## Commands
 
@@ -284,4 +287,20 @@ row: rune -> count
 35: 'k' (hex: U+006B) (dec: 107) -> 1
 36: 'p' (hex: U+0070) (dec: 112) -> 4
 37: '\n' (hex: U+000A) (dec: 10) -> 1
+```
+
+### Art
+
+Display ASCII art visualisations:
+
+```bash
+dct art
+```
+
+### Version
+
+Display tool version:
+
+```bash
+dct version
 ```

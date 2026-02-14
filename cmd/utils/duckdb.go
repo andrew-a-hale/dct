@@ -44,7 +44,7 @@ func CheckFileHasRows(file string) (bool, error) {
 	)
 
 	var cnt int
-	row.Scan(&cnt)
+	_ = row.Scan(&cnt)
 	return cnt > 0, nil
 }
 
@@ -53,7 +53,7 @@ func Execute(query string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.ExecContext(context.Background(), query)
 	if err != nil {
@@ -68,7 +68,7 @@ func Query(query string) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to query duckdb: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	rows, err := conn.QueryContext(context.Background(), query)
 	if err != nil {
@@ -102,29 +102,29 @@ func Query(query string) (Result, error) {
 		var tmp []any
 		for _, v := range vals {
 			deref := reflect.Indirect(reflect.ValueOf(v)).Interface()
-			switch deref.(type) {
+			switch deref := deref.(type) {
 			case nil:
 				tmp = append(tmp, nil)
 			case string:
-				tmp = append(tmp, deref.(string))
+				tmp = append(tmp, deref)
 			case bool:
-				tmp = append(tmp, deref.(bool))
+				tmp = append(tmp, deref)
 			case int:
-				tmp = append(tmp, deref.(int))
+				tmp = append(tmp, deref)
 			case int32:
-				tmp = append(tmp, int(deref.(int32))) // demote to architecture
+				tmp = append(tmp, int(deref)) // demote to architecture
 			case int64:
-				tmp = append(tmp, int(deref.(int64))) // demote to architecture
+				tmp = append(tmp, int(deref)) // demote to architecture
 			case float32:
-				tmp = append(tmp, deref.(float32))
+				tmp = append(tmp, deref)
 			case float64:
-				tmp = append(tmp, deref.(float64))
+				tmp = append(tmp, deref)
 			case time.Time:
-				tmp = append(tmp, deref.(time.Time))
+				tmp = append(tmp, deref)
 			case []any:
-				tmp = append(tmp, deref.([]any))
+				tmp = append(tmp, deref)
 			case map[string]any:
-				tmp = append(tmp, deref.(map[string]any))
+				tmp = append(tmp, deref)
 			default:
 				return Result{}, fmt.Errorf(
 					"failed to serialise rows from duckdb, type `%T` not implemented yet",
@@ -165,10 +165,10 @@ func (result *Result) ToCsv(writer io.Writer) error {
 	return nil
 }
 
-func (r *Result) RowsToString() [][]string {
+func (result *Result) RowsToString() [][]string {
 	var rows [][]string
 
-	for _, r := range r.Rows {
+	for _, r := range result.Rows {
 		var row []string
 		for _, v := range r {
 			row = append(row, fmt.Sprintf("%v", v))
@@ -211,7 +211,7 @@ func (result *Result) Render(writer io.Writer, maxRows int) error {
 	return nil
 }
 
-func (result *Result) ToSql(table string) string {
+func (result *Result) ToSQL(table string) string {
 	sql := fmt.Sprintf("create table %s (", table)
 
 	var cols []string

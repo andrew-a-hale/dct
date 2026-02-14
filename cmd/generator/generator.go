@@ -2,12 +2,12 @@ package generator
 
 import (
 	"context"
-	"dct/cmd/utils"
-	"encoding/json"
 	"io"
 	"log"
 	"os"
 	"reflect"
+
+	"dct/cmd/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -68,22 +68,4 @@ var GenCmd = &cobra.Command{
 		ctx = context.WithValue(ctx, FIELD_MAP_KEY, fieldMap)
 		Write(ctx, out, lines)
 	},
-}
-
-func parseInputSchema(schemaString string) any {
-	sch := []byte(schemaString)
-
-	file, err := os.Open(schemaString)
-	if err == nil {
-		sch, _ = io.ReadAll(file)
-	}
-	defer file.Close()
-
-	var schema any
-	err = json.Unmarshal(sch, &schema)
-	if err != nil {
-		log.Fatalf("Error: failed to parse metric config: %v\n", err)
-	}
-
-	return sch
 }
