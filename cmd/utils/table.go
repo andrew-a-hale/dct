@@ -103,28 +103,14 @@ func Query(query string) (Result, error) {
 		for _, v := range vals {
 			deref := reflect.Indirect(reflect.ValueOf(v)).Interface()
 			switch deref := deref.(type) {
-			case nil:
-				tmp = append(tmp, nil)
-			case string:
+			case nil, string, bool, int, float32, float64, time.Time, []any, map[string]any:
 				tmp = append(tmp, deref)
-			case bool:
-				tmp = append(tmp, deref)
-			case int:
-				tmp = append(tmp, deref)
+
+			// demote to architecture
 			case int32:
-				tmp = append(tmp, int(deref)) // demote to architecture
+				tmp = append(tmp, int(deref))
 			case int64:
-				tmp = append(tmp, int(deref)) // demote to architecture
-			case float32:
-				tmp = append(tmp, deref)
-			case float64:
-				tmp = append(tmp, deref)
-			case time.Time:
-				tmp = append(tmp, deref)
-			case []any:
-				tmp = append(tmp, deref)
-			case map[string]any:
-				tmp = append(tmp, deref)
+				tmp = append(tmp, int(deref))
 			default:
 				return Result{}, fmt.Errorf(
 					"failed to serialise rows from duckdb, type `%T` not implemented yet",

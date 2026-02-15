@@ -17,7 +17,6 @@ var (
 	lines     int
 	format    string
 	outfile   string
-	cache     utils.Cache = utils.NewCache()
 )
 
 func init() {
@@ -36,6 +35,7 @@ const (
 	FORMAT_KEY    ctxKey = "format"
 	SCHEMA_KEY    ctxKey = "schema"
 	FIELD_MAP_KEY ctxKey = "fieldMap"
+	CACHE_KEY     ctxKey = "cache"
 )
 
 var GenCmd = &cobra.Command{
@@ -66,6 +66,8 @@ var GenCmd = &cobra.Command{
 		ctx = context.WithValue(ctx, FORMAT_KEY, "."+format)
 		ctx = context.WithValue(ctx, SCHEMA_KEY, schema)
 		ctx = context.WithValue(ctx, FIELD_MAP_KEY, fieldMap)
+
+		ctx = context.WithValue(ctx, CACHE_KEY, utils.NewCache())
 		Write(ctx, out, lines)
 	},
 }

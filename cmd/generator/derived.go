@@ -6,6 +6,8 @@ import (
 	"log"
 	"reflect"
 
+	"dct/cmd/utils"
+
 	"github.com/expr-lang/expr"
 )
 
@@ -35,6 +37,12 @@ func (s DerivedField) Generate(ctx context.Context) any {
 
 	for k, v := range fieldPtrs {
 		field := v.Elem().Interface().(Field)
+
+		cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+		if !ok {
+			log.Fatalf("failed to access cache")
+		}
+
 		cacheValue := cache.GetValue(field.GetName())
 		switch v := cacheValue.(type) {
 		case bool, int, int32, int64, float32, float64, string:

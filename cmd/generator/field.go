@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"dct/cmd/generator/sources"
+	"dct/cmd/utils"
 
 	"github.com/google/uuid"
 )
@@ -114,6 +115,11 @@ func (s RandomBoolField) Generate(ctx context.Context) any {
 		value = false
 	}
 
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -133,6 +139,12 @@ type RandomEnumField struct {
 func (s RandomEnumField) Generate(ctx context.Context) any {
 	n := len(s.Config.Values)
 	value := s.Config.Values[rand.IntN(n)]
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -156,6 +168,11 @@ func (s RandomASCIIField) Generate(ctx context.Context) any {
 		value += string(uint8(rand.IntN(93) + 33))
 	}
 
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 
 	return value
@@ -176,6 +193,12 @@ type RandomUniformIntField struct {
 
 func (s RandomUniformIntField) Generate(ctx context.Context) any {
 	value := rand.IntN(s.Config.Max-s.Config.Min) + s.Config.Min
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -195,6 +218,12 @@ type RandomNormalField struct {
 
 func (s RandomNormalField) Generate(ctx context.Context) any {
 	value := rand.NormFloat64()*s.Config.Std + s.Config.Mean
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -213,6 +242,12 @@ type RandomPoissonField struct {
 
 func (s RandomPoissonField) Generate(ctx context.Context) any {
 	value := strconv.Itoa(generatePoisson(s.Config.Lambda))
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -241,6 +276,12 @@ type LastNameField struct {
 
 func (s LastNameField) Generate(ctx context.Context) any {
 	value := sources.LastNames[rand.IntN(len(sources.LastNames))]
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -256,6 +297,12 @@ type FirstNameField struct {
 
 func (s FirstNameField) Generate(ctx context.Context) any {
 	value := sources.FirstNames[rand.IntN(len(sources.FirstNames))]
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -316,6 +363,12 @@ func (s RandomDatetimeField) Generate(ctx context.Context) any {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(loc).Format(time.RFC3339)
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -371,6 +424,12 @@ func (s RandomDateField) Generate(ctx context.Context) any {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).Format(time.DateOnly)
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -432,6 +491,12 @@ func (s RandomTimeField) Generate(ctx context.Context) any {
 	}
 
 	value := time.Unix(rand.Int64N(ub-lb)+lb, 0).In(time.UTC).Format(time.TimeOnly)
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -447,6 +512,12 @@ type UUIDField struct {
 
 func (s UUIDField) Generate(ctx context.Context) any {
 	value := uuid.NewString()
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -462,6 +533,12 @@ type EmailField struct {
 
 func (s EmailField) Generate(ctx context.Context) any {
 	value := sources.Emails[rand.IntN(len(sources.Emails))]
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
@@ -477,6 +554,12 @@ type CompanyField struct {
 
 func (s CompanyField) Generate(ctx context.Context) any {
 	value := sources.Companies[rand.IntN(len(sources.Companies))]
+
+	cache, ok := ctx.Value(CACHE_KEY).(utils.Cache)
+	if !ok {
+		log.Fatalf("failed to access cache")
+	}
+
 	cache.PutValue(s.Field, value)
 	return value
 }
